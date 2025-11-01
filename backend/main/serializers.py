@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from .models import Planificacion, PlanificacionDetalle, Evento, Calendario
 
 User = get_user_model()
 
@@ -32,3 +33,30 @@ class UserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
+
+class PlanificacionSerializer(serializers.ModelSerializer):
+    autor = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Planificacion
+        fields = '__all__'
+
+class PlanificacionDetalleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlanificacionDetalle
+        fields = '__all__'
+
+class EventoSerializer(serializers.ModelSerializer):
+    creado_por = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Evento
+        fields = '__all__'
+
+class CalendarioSerializer(serializers.ModelSerializer):
+    eventos = EventoSerializer(many=True, read_only=True)
+    planificaciones_aprobadas = PlanificacionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Calendario
+        fields = '__all__'

@@ -1,11 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 axios.defaults.baseURL = 'http://localhost:8000';
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export { AuthContext };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -25,7 +25,12 @@ export const AuthProvider = ({ children }) => {
       setToken(access);
       localStorage.setItem('token', access);
       axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
-      // Fetch user info if needed
+      // Fetch user info to get role
+      const userResponse = await axios.get('/api/auth/user/', {
+        headers: { Authorization: `Bearer ${access}` },
+      });
+      setUser(userResponse.data);
+      localStorage.setItem('role', userResponse.data.role);
       return true;
     } catch (error) {
       console.error('Login failed', error);
