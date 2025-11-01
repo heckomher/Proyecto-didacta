@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, LoginSerializer, PlanificacionSerializer, PlanificacionDetalleSerializer, EventoSerializer, CalendarioSerializer
 from .models import Planificacion, PlanificacionDetalle, Evento, Calendario
@@ -22,7 +23,8 @@ class RegisterView(generics.CreateAPIView):
         return super().create(request, *args, **kwargs)
 
 class LoginView(TokenObtainPairView):
-    serializer_class = LoginSerializer
+    # Use SimpleJWT's serializer to return access/refresh tokens
+    serializer_class = TokenObtainPairSerializer
     permission_classes = [AllowAny]
 
 @api_view(['POST'])
