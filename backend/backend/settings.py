@@ -93,16 +93,16 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     },
-    'mongodb': {
-        'ENGINE': 'djongo',
-        'NAME': os.environ.get('MONGO_DATABASE', 'didacta_mongo'),
-        'CLIENT': {
-            'host': os.environ.get('MONGO_HOST', 'db_mongo'),
-            'port': int(os.environ.get('MONGO_PORT', '27017')),
-            'username': os.environ.get('MONGO_USER', 'root'),
-            'password': os.environ.get('MONGO_PASSWORD', 'rootpassword'),
-        }
-    }
+    # 'mongodb': {
+    #     'ENGINE': 'djongo',
+    #     'NAME': os.environ.get('MONGO_DATABASE', 'didacta_mongo'),
+    #     'CLIENT': {
+    #         'host': os.environ.get('MONGO_HOST', 'db_mongo'),
+    #         'port': int(os.environ.get('MONGO_PORT', '27017')),
+    #         'username': os.environ.get('MONGO_USER', 'root'),
+    #         'password': os.environ.get('MONGO_PASSWORD', 'rootpassword'),
+    #     }
+    # }
 }
 
 
