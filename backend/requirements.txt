@@ -1,6 +1,7 @@
 Django==5.1.3
 pymysql
 # djongo  # Commented out due to incompatibility with Django 5.1
+mongoengine
 python-dotenv
 djangorestframework
 djangorestframework-simplejwt

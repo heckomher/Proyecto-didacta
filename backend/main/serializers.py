@@ -46,17 +46,33 @@ class PlanificacionDetalleSerializer(serializers.ModelSerializer):
         model = PlanificacionDetalle
         fields = '__all__'
 
-class EventoSerializer(serializers.ModelSerializer):
-    creado_por = serializers.StringRelatedField(read_only=True)
+class EventoSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    titulo = serializers.CharField(max_length=200)
+    descripcion = serializers.CharField()
+    fecha_inicio = serializers.DateTimeField()
+    fecha_fin = serializers.DateTimeField()
+    creado_por = serializers.CharField(read_only=True)
 
-    class Meta:
-        model = Evento
-        fields = '__all__'
+    def create(self, validated_data):
+        return Evento(**validated_data).save()
 
-class CalendarioSerializer(serializers.ModelSerializer):
-    eventos = EventoSerializer(many=True, read_only=True)
-    planificaciones_aprobadas = PlanificacionSerializer(many=True, read_only=True)
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        return instance.save()
 
-    class Meta:
-        model = Calendario
-        fields = '__all__'
+class CalendarioSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    nombre = serializers.CharField(max_length=100)
+    descripcion = serializers.CharField()
+    eventos = serializers.ListField(child=serializers.CharField(), read_only=True)  # List of Evento IDs
+    planificaciones_aprobadas = serializers.ListField(child=serializers.CharField(), read_only=True)  # List of Planificacion IDs
+
+    def create(self, validated_data):
+        return Calendario(**validated_data).save()
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        return instance.save()

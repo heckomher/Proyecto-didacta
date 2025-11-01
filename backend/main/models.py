@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+import mongoengine
+from mongoengine import Document, StringField, DateTimeField, ReferenceField, ListField
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -45,21 +47,25 @@ class PlanificacionDetalle(models.Model):
     def __str__(self):
         return f"Detalle de {self.planificacion.titulo}"
 
-class Evento(models.Model):
-    titulo = models.CharField(max_length=200)
-    descripcion = models.TextField()
-    fecha_inicio = models.DateTimeField()
-    fecha_fin = models.DateTimeField()
-    creado_por = models.ForeignKey('main.User', on_delete=models.CASCADE)
+class Evento(Document):
+    titulo = StringField(max_length=200, required=True)
+    descripcion = StringField()
+    fecha_inicio = DateTimeField(required=True)
+    fecha_fin = DateTimeField(required=True)
+    creado_por = StringField(max_length=150, required=True)  # Username
+
+    meta = {'collection': 'eventos'}
 
     def __str__(self):
         return self.titulo
 
-class Calendario(models.Model):
-    nombre = models.CharField(max_length=100)
-    descripcion = models.TextField()
-    eventos = models.ManyToManyField(Evento)
-    planificaciones_aprobadas = models.ManyToManyField(Planificacion)
+class Calendario(Document):
+    nombre = StringField(max_length=100, required=True)
+    descripcion = StringField()
+    eventos = ListField(ReferenceField(Evento))
+    planificaciones_aprobadas = ListField(StringField())  # Planificacion IDs
+
+    meta = {'collection': 'calendarios'}
 
     def __str__(self):
         return self.nombre

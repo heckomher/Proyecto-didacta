@@ -88,19 +88,19 @@ class EventoListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Evento.objects.all()
+        return Evento.objects
 
     def perform_create(self, serializer):
         if self.request.user.role != 'UTP':
             raise serializers.ValidationError("Only UTP can create events.")
-        serializer.save(creado_por=self.request.user)
+        serializer.save(creado_por=self.request.user.username)
 
 class EventoDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = EventoSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Evento.objects.all()
+        return Evento.objects
 
     def perform_update(self, serializer):
         if self.request.user.role != 'UTP':
@@ -117,7 +117,7 @@ class CalendarioListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Calendario.objects.all()
+        return Calendario.objects
 
 class PlanificacionDetalleView(generics.RetrieveUpdateAPIView):
     serializer_class = PlanificacionDetalleSerializer
