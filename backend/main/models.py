@@ -38,14 +38,16 @@ class Planificacion(models.Model):
     def __str__(self):
         return f"{self.titulo} - {self.autor.username}"
 
-class PlanificacionDetalle(models.Model):
-    planificacion = models.OneToOneField(Planificacion, on_delete=models.CASCADE)
-    objetivos = models.JSONField()
-    actividades = models.JSONField()
-    recursos = models.JSONField()
+class PlanificacionDetalle(Document):
+    planificacion = StringField(required=True)  # Planificacion ID
+    objetivos = mongoengine.DictField()  # JSON-like
+    actividades = mongoengine.DictField()
+    recursos = mongoengine.DictField()
+
+    meta = {'collection': 'planificacion_detalles'}
 
     def __str__(self):
-        return f"Detalle de {self.planificacion.titulo}"
+        return f"Detalle de {self.planificacion}"
 
 class Evento(Document):
     titulo = StringField(max_length=200, required=True)

@@ -41,10 +41,20 @@ class PlanificacionSerializer(serializers.ModelSerializer):
         model = Planificacion
         fields = '__all__'
 
-class PlanificacionDetalleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PlanificacionDetalle
-        fields = '__all__'
+class PlanificacionDetalleSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    planificacion = serializers.CharField()
+    objetivos = serializers.DictField()
+    actividades = serializers.DictField()
+    recursos = serializers.DictField()
+
+    def create(self, validated_data):
+        return PlanificacionDetalle(**validated_data).save()
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        return instance.save()
 
 class EventoSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)

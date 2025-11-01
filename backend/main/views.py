@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import Http404
 from rest_framework import generics, status, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -124,7 +125,23 @@ class PlanificacionDetalleView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return PlanificacionDetalle.objects.filter(planificacion__autor=self.request.user)
+        return PlanificacionDetalle.objects
+
+    def get_object(self):
+        planificacion_id = self.kwargs.get('pk')
+        try:
+            return PlanificacionDetalle.objects.get(planificacion=planificacion_id)
+        except PlanificacionDetalle.DoesNotExist:
+            raise Http404
+
+    def perform_update(self, serializer):
+        planificacion_id = self.kwargs.get('pk')
+        # Ensure the user owns the planificacion
+        try:
+            planificacion = Planificacion.objects.get(id=planificacion_id, autor=self.request.user)
+        except Planificacion.DoesNotExist:
+            raise serializers.ValidationError("Planificación no encontrada o no autorizada.")
+        serializer.save()
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
