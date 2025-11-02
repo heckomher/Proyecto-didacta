@@ -11,6 +11,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refresh'));
+  const [loading, setLoading] = useState(true);
+
+  // Load user data on mount if token exists
+  useEffect(() => {
+    const loadUser = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        try {
+          const userResponse = await axios.get('/api/auth/user/', {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          setUser(userResponse.data);
+        } catch (error) {
+          console.error('Failed to load user', error);
+          // Token might be invalid, clear it
+          localStorage.removeItem('token');
+          localStorage.removeItem('refresh');
+          setToken(null);
+          setRefreshToken(null);
+        }
+      }
+      setLoading(false);
+    };
+    loadUser();
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -112,7 +137,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, register }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
