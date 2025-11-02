@@ -13,7 +13,12 @@ import './App.css';
 
 const ProtectedRoute = ({ children }) => {
   const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
+  return token ? (
+    <>
+      <Navbar />
+      {children}
+    </>
+  ) : <Navigate to="/login" />;
 };
 
 const Dashboard = () => {
@@ -43,12 +48,12 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <div className="App min-h-screen bg-academic-light dark:bg-academic-dark">
+          <div className="App min-h-screen bg-gray-50 dark:bg-gray-900">
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/calendar" element={<ProtectedRoute><Navbar /><CalendarView /></ProtectedRoute>} />
-              <Route path="/" element={<ProtectedRoute><Navbar /><Dashboard /></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             </Routes>
           </div>
         </Router>
