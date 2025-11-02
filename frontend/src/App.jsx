@@ -35,10 +35,20 @@ const ProtectedRoute = ({ children }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [redirecting, setRedirecting] = React.useState(false);
   
   // Redirect superusers to Django admin
+  React.useEffect(() => {
+    if (user && user.is_superuser && !redirecting) {
+      setRedirecting(true);
+      // Give user a moment to see where they're going
+      setTimeout(() => {
+        window.location.href = 'http://localhost:8000/admin/';
+      }, 500);
+    }
+  }, [user, redirecting]);
+  
   if (user && user.is_superuser) {
-    window.location.href = 'http://localhost:8000/admin/';
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
