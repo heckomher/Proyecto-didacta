@@ -1,7 +1,29 @@
 *.pyc
+*.pyo
+*.pyd
 .env
+.env.*
 node_modules/
 .venv/
+venv/
+env/
 __pycache__/
 .vscode/
 .DS_Store
+# Django/SQLite
+backend/db.sqlite3
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pytest_cache/
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# Frontend tooling caches
+frontend/**/.eslintcache
+frontend/**/.parcel-cache
