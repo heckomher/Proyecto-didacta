@@ -35,31 +35,9 @@ const ProtectedRoute = ({ children }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [redirecting, setRedirecting] = React.useState(false);
   
-  // Redirect superusers to Django admin
-  React.useEffect(() => {
-    if (user && user.is_superuser && !redirecting) {
-      setRedirecting(true);
-      // Give user a moment to see where they're going
-      setTimeout(() => {
-        window.location.href = 'http://localhost:8000/admin/';
-      }, 500);
-    }
-  }, [user, redirecting]);
-  
-  if (user && user.is_superuser) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Redirigiendo al panel de administración...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (user && user.role === 'UTP') {
+  // Superusers and UTP users see the UTP dashboard
+  if (user && (user.role === 'UTP' || user.is_superuser)) {
     return <DashboardUTP />;
   }
   return <DashboardDocente />;
