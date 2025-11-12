@@ -1,13 +1,40 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import axios from 'axios';
 
 const DashboardUTP = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [planificaciones, setPlanificaciones] = useState([]);
   const [comentarios, setComentarios] = useState({});
+  const [tieneAnioActivo, setTieneAnioActivo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    verificarAnioAcademico();
+  }, []);
+
+  const verificarAnioAcademico = async () => {
+    try {
+      const response = await axios.get('http://localhost/api/verificar-anio-academico/');
+      setTieneAnioActivo(response.data.tiene_anio_activo);
+      if (!response.data.tiene_anio_activo) {
+        // Redirigir a configuración académica si no hay año activo
+        setTimeout(() => {
+          navigate('/configuracion-academica');
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error verificando año académico:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchPlanificaciones = useCallback(async () => {
+    if (!tieneAnioActivo) return;
+    
     try {
       const response = await axios.get('/api/planificaciones/', {
         headers: { Authorization: `Bearer ${token}` },
@@ -16,11 +43,13 @@ const DashboardUTP = () => {
     } catch (error) {
       console.error('Error fetching planificaciones', error);
     }
-  }, [token]);
+  }, [token, tieneAnioActivo]);
 
   useEffect(() => {
-    fetchPlanificaciones();
-  }, [fetchPlanificaciones]);
+    if (tieneAnioActivo !== null) {
+      fetchPlanificaciones();
+    }
+  }, [fetchPlanificaciones, tieneAnioActivo]);
 
   const handleValidar = async (id, accion) => {
     try {
@@ -63,6 +92,11 @@ const DashboardUTP = () => {
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
             <span className="font-medium">Autor:</span> {p.autor}
+            {p.anio_academico_nombre && (
+              <span className="ml-3">
+                <span className="font-medium">Año:</span> {p.anio_academico_nombre}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
             <span className="flex items-center">
@@ -115,11 +149,67 @@ const DashboardUTP = () => {
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Verificando configuración...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (tieneAnioActivo === false) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <svg className="h-16 w-16 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-yellow-800 dark:text-yellow-200 mb-3">
+            ⚠️ Configuración Requerida
+          </h2>
+          <p className="text-yellow-700 dark:text-yellow-300 mb-6 text-lg">
+            No hay un año académico activo configurado. Debe crear y activar un año académico antes de gestionar planificaciones.
+          </p>
+          <p className="text-yellow-600 dark:text-yellow-400 mb-6">
+            Será redirigido a la configuración académica en unos segundos...
+          </p>
+          <button
+            onClick={() => navigate('/configuracion-academica')}
+            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium inline-flex items-center gap-2"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Ir a Configuración Académica
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-serif">Dashboard UTP</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">Gestión y validación de planificaciones académicas</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-serif">Dashboard UTP</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Gestión y validación de planificaciones académicas</p>
+        </div>
+        <button
+          onClick={() => navigate('/configuracion-academica')}
+          className="px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg font-medium transition-colors inline-flex items-center"
+        >
+          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Configuración Académica
+        </button>
       </div>
 
       {/* Statistics Cards */}

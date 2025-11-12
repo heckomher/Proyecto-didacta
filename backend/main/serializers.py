@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import Planificacion, PlanificacionDetalle, Evento, Calendario
+from .models import Planificacion, PlanificacionDetalle, Evento, Calendario, AnioAcademico, PeriodoAcademico, Feriado, PeriodoVacaciones
 
 User = get_user_model()
 
@@ -37,10 +37,35 @@ class LoginSerializer(serializers.Serializer):
 
 class PlanificacionSerializer(serializers.ModelSerializer):
     autor = serializers.StringRelatedField(read_only=True)
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
 
     class Meta:
         model = Planificacion
         fields = '__all__'
+    
+    def validate_anio_academico(self, value):
+        """Validar que el año académico existe y no está cerrado"""
+        if not value:
+            raise serializers.ValidationError("El año académico es obligatorio")
+        
+        if value.is_cerrado:
+            raise serializers.ValidationError("No se pueden crear planificaciones en un año académico cerrado")
+        
+        return value
+    
+    def validate(self, data):
+        """Validaciones adicionales a nivel de objeto"""
+        # Si no hay año académico en los datos, verificar que hay uno activo
+        if 'anio_academico' not in data or not data['anio_academico']:
+            # Buscar año académico activo por defecto
+            anio_activo = AnioAcademico.objects.filter(estado='ACTIVO').first()
+            if not anio_activo:
+                raise serializers.ValidationError(
+                    "No hay año académico activo. Debe configurar un año académico antes de crear planificaciones."
+                )
+            data['anio_academico'] = anio_activo
+        
+        return data
 
 class PlanificacionDetalleSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
@@ -87,3 +112,28 @@ class CalendarioSerializer(serializers.Serializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         return instance.save()
+class FeriadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feriado
+        fields = ['id', 'nombre', 'fecha', 'anio_academico', 'tipo']
+
+class PeriodoVacacionesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PeriodoVacaciones
+        fields = ['id', 'nombre', 'fecha_inicio', 'fecha_fin', 'anio_academico', 'tipo']
+
+class PeriodoAcademicoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PeriodoAcademico
+        fields = ['id', 'nombre', 'numero', 'fecha_inicio', 'fecha_fin']
+
+class AnioAcademicoSerializer(serializers.ModelSerializer):
+    periodos = PeriodoAcademicoSerializer(many=True, read_only=True)
+    feriados = FeriadoSerializer(many=True, read_only=True)
+    vacaciones = PeriodoVacacionesSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = AnioAcademico
+        fields = ['id', 'nombre', 'fecha_inicio', 'fecha_fin', 'estado', 'activo', 'cerrado', 'tipo_periodo', 
+                  'periodos', 'feriados', 'vacaciones', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'activo', 'cerrado']

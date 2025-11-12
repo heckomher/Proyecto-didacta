@@ -10,6 +10,16 @@ const CalendarView = () => {
   const { token } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [anioActivo, setAnioActivo] = useState(null);
+
+  const fetchAnioActivo = useCallback(async () => {
+    try {
+      const response = await axios.get('http://localhost/api/anios-academicos/activo/');
+      setAnioActivo(response.data);
+    } catch (error) {
+      console.error('Error fetching año activo', error);
+    }
+  }, []);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -22,6 +32,7 @@ const CalendarView = () => {
         start: e.fecha_inicio,
         end: e.fecha_fin,
         color: getEventColor(e.tipo),
+        extendedProps: { tipo: 'evento' }
       }));
       setEvents(eventData);
     } catch (error) {
@@ -32,17 +43,65 @@ const CalendarView = () => {
   }, [token]);
 
   useEffect(() => {
+    fetchAnioActivo();
     fetchEvents();
-  }, [fetchEvents]);
+  }, [fetchAnioActivo, fetchEvents]);
 
   const getEventColor = (tipo) => {
     const colors = {
       CURSO: '#2563eb', // primary-600
       TALLER: '#7c3aed', // secondary-600
       SEMINARIO: '#059669', // green-600
+      periodo: '#6366f1', // indigo-500
+      feriado: '#dc2626', // red-600
+      vacaciones: '#f59e0b', // amber-500
     };
     return colors[tipo] || '#6b7280'; // gray-500
   };
+
+  // Combinar eventos del año académico con eventos regulares
+  const allEvents = React.useMemo(() => {
+    const academicEvents = [];
+    
+    if (anioActivo) {
+      // Agregar periodos académicos
+      anioActivo.periodos?.forEach(periodo => {
+        academicEvents.push({
+          title: `📚 ${periodo.nombre}`,
+          start: periodo.fecha_inicio,
+          end: periodo.fecha_fin,
+          color: getEventColor('periodo'),
+          display: 'background',
+          extendedProps: { tipo: 'periodo' }
+        });
+      });
+
+      // Agregar feriados
+      anioActivo.feriados?.forEach(feriado => {
+        academicEvents.push({
+          title: `🎉 ${feriado.nombre}`,
+          start: feriado.fecha,
+          allDay: true,
+          color: getEventColor('feriado'),
+          extendedProps: { tipo: 'feriado' }
+        });
+      });
+
+      // Agregar vacaciones
+      anioActivo.vacaciones?.forEach(vacacion => {
+        academicEvents.push({
+          title: `🏖️ ${vacacion.nombre}`,
+          start: vacacion.fecha_inicio,
+          end: vacacion.fecha_fin,
+          color: getEventColor('vacaciones'),
+          display: 'background',
+          extendedProps: { tipo: 'vacaciones' }
+        });
+      });
+    }
+
+    return [...events, ...academicEvents];
+  }, [events, anioActivo]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -53,7 +112,7 @@ const CalendarView = () => {
 
       {/* Legend */}
       <div className="card p-4 mb-6">
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex flex-wrap items-center gap-6 text-sm">
           <span className="font-medium text-gray-700 dark:text-gray-300">Leyenda:</span>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-primary-600"></div>
@@ -66,6 +125,18 @@ const CalendarView = () => {
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-green-600"></div>
             <span className="text-gray-600 dark:text-gray-400">Seminario</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-indigo-500"></div>
+            <span className="text-gray-600 dark:text-gray-400">📚 Periodo Académico</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-600"></div>
+            <span className="text-gray-600 dark:text-gray-400">🎉 Feriado</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-amber-500"></div>
+            <span className="text-gray-600 dark:text-gray-400">🏖️ Vacaciones</span>
           </div>
         </div>
       </div>
@@ -84,7 +155,7 @@ const CalendarView = () => {
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
-              events={events}
+              events={allEvents}
               headerToolbar={{
                 left: 'prev,next today',
                 center: 'title',

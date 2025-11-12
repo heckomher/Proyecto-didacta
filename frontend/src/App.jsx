@@ -8,6 +8,7 @@ import Register from './components/Register';
 import DashboardDocente from './components/DashboardDocente';
 import DashboardUTP from './components/DashboardUTP';
 import CalendarView from './components/CalendarView';
+import ConfiguracionAcademica from './components/ConfiguracionAcademica';
 import Navbar from './components/Navbar';
 import './App.css';
 
@@ -53,6 +54,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
+              <Route path="/configuracion-academica" element={<ProtectedRoute><ConfiguracionAcademica /></ProtectedRoute>} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             </Routes>
           </div>
