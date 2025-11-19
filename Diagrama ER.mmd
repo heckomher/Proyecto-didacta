@@ -1,0 +1,87 @@
+erDiagram
+    %% Entidades principales del sistema
+    
+    USER {
+        int id PK "Auto-incremento"
+        string username UK "Nombre de usuario único"
+        string email UK "Email único"
+        string password "Hash de contraseña"
+        string first_name "Nombre"
+        string last_name "Apellido"
+        enum role "DOCENTE, UTP"
+        boolean is_active "Usuario activo"
+        boolean is_staff "Es staff"
+        boolean is_superuser "Es superusuario"
+        datetime date_joined "Fecha de registro"
+        datetime last_login "Último login"
+    }
+    
+    ANIO_ACADEMICO {
+        int id PK "Auto-incremento"
+        string nombre UK "Ej: 2025"
+        date fecha_inicio "Fecha inicio año"
+        date fecha_fin "Fecha fin año"
+        enum estado "BORRADOR, ACTIVO, CERRADO"
+        boolean activo "Campo legacy derivado"
+        boolean cerrado "Campo legacy derivado"
+        enum tipo_periodo "SEMESTRE, TRIMESTRE, ANUAL"
+        datetime created_at "Fecha creación"
+        datetime updated_at "Fecha actualización"
+    }
+    
+    PLANIFICACION {
+        int id PK "Auto-incremento"
+        int autor_id FK "Usuario que crea"
+        int anio_academico_id FK "Año académico obligatorio"
+        enum estado "BORRADOR, PENDIENTE, APROBADA, RECHAZADA"
+        datetime fecha_creacion "Auto-generada"
+        date fecha_inicio "Fecha inicio planificación"
+        date fecha_fin "Fecha fin planificación"
+        enum tipo "CURSO, TALLER, SEMINARIO"
+        string titulo "Título planificación"
+        text comentarios_validacion "Comentarios UTP"
+    }
+    
+    PERIODO_ACADEMICO {
+        int id PK "Auto-incremento"
+        int anio_academico_id FK "Año académico padre"
+        string nombre "Ej: Primer Semestre"
+        int numero "1, 2, 3..."
+        date fecha_inicio "Inicio del período"
+        date fecha_fin "Fin del período"
+    }
+    
+    FERIADO {
+        int id PK "Auto-incremento"
+        string nombre "Nombre del feriado"
+        date fecha "Fecha del feriado"
+        int anio_academico_id FK "Año académico (opcional)"
+        enum tipo "FERIADO, INSTITUCIONAL, RECESO"
+    }
+    
+    PERIODO_VACACIONES {
+        int id PK "Auto-incremento"
+        string nombre "Ej: Vacaciones de Invierno"
+        date fecha_inicio "Inicio vacaciones"
+        date fecha_fin "Fin vacaciones"
+        int anio_academico_id FK "Año académico padre"
+        enum tipo "INVIERNO, VERANO, RECESO"
+    }
+    
+    %% Relaciones con cardinalidad
+    USER ||--o{ PLANIFICACION : "crea"
+    ANIO_ACADEMICO ||--o{ PLANIFICACION : "contiene"
+    ANIO_ACADEMICO ||--o{ PERIODO_ACADEMICO : "tiene_periodos"
+    ANIO_ACADEMICO ||--o{ FERIADO : "define_feriados"
+    ANIO_ACADEMICO ||--o{ PERIODO_VACACIONES : "define_vacaciones"
+    
+    %% Estilos para diferentes tipos de entidades
+    classDef userEntity fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef planEntity fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px  
+    classDef configEntity fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef timeEntity fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class USER userEntity
+    class PLANIFICACION planEntity
+    class ANIO_ACADEMICO configEntity
+    class PERIODO_ACADEMICO,FERIADO,PERIODO_VACACIONES timeEntity
