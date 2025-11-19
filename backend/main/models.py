@@ -1,17 +1,231 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 import mongoengine
-from mongoengine import Document, StringField, DateTimeField, ReferenceField, ListField
+from mongoengine import Document, StringField, DateTimeField, ReferenceField, ListField, DictField
 
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('DOCENTE', 'Docente'),
         ('UTP', 'UTP'),
+        ('EQUIPO_DIRECTIVO', 'Equipo Directivo'),
     ]
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='DOCENTE')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='DOCENTE')
+    nombre = models.CharField(max_length=100, blank=True)
+    apellido = models.CharField(max_length=100, blank=True)
+    activo = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        full_name = f"{self.nombre} {self.apellido}".strip()
+        return f"{full_name or self.username} ({self.role})"
+
+    def login(self):
+        """Método para lógica de login si es necesario en un futuro"""
+        pass
+    
+    def logout(self):
+        """Método para lógica de logout si es necesario en un futuro"""
+        pass
+
+class Rol(models.Model):
+    """Roles del sistema según diagrama ER"""
+    nombre_rol = models.CharField(max_length=50, unique=True)
+    descripcion = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Rol'
+        verbose_name_plural = 'Roles'
+    
+    def __str__(self):
+        return self.nombre_rol
+
+class Docente(models.Model):
+    """Perfil de Docente según diagrama de clases"""
+    usuario = models.OneToOneField('User', on_delete=models.CASCADE, related_name='perfil_docente')
+    rut = models.CharField(max_length=12, unique=True)
+    especialidad = models.CharField(max_length=200)
+    
+    class Meta:
+        verbose_name = 'Docente'
+        verbose_name_plural = 'Docentes'
+    
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} - {self.especialidad}"
+    
+    def crear_planificacion(self):
+        """Crear nueva planificación"""
+        pass
+    
+    def editar_planificacion(self, planificacion_id):
+        """Editar planificación existente"""
+        pass
+    
+    def visualizar_planificacion(self, planificacion_id):
+        """Visualizar planificación"""
+        pass
+    
+    def reprogramar_actividad(self, actividad_id):
+        """Reprogramar actividad"""
+        pass
+    
+    def registrar_cumplimiento_objetivos(self, objetivo_id, cumplimiento):
+        """Registrar cumplimiento de objetivos"""
+        pass
+
+class EquipoDirectivo(models.Model):
+    """Perfil de Equipo Directivo según diagrama de clases"""
+    usuario = models.OneToOneField('User', on_delete=models.CASCADE, related_name='perfil_directivo')
+    cargo = models.CharField(max_length=100)
+    departamento = models.CharField(max_length=100)
+    
+    class Meta:
+        verbose_name = 'Equipo Directivo'
+        verbose_name_plural = 'Equipo Directivo'
+    
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} - {self.cargo}"
+    
+    def visualizar_reportes(self):
+        """Visualizar reportes académicos"""
+        pass
+    
+    def crear_usuario(self):
+        """Crear nuevo usuario"""
+        pass
+    
+    def gestionar_usuarios(self):
+        """Gestionar usuarios del sistema"""
+        pass
+
+class NivelEducativo(models.Model):
+    """Niveles educativos según diagrama de clases"""
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Nivel Educativo'
+        verbose_name_plural = 'Niveles Educativos'
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
+    
+    def agregar(self):
+        """Agregar nuevo nivel"""
+        pass
+    
+    def modificar(self):
+        """Modificar nivel existente"""
+        pass
+    
+    def eliminar(self):
+        """Eliminar nivel"""
+        pass
+
+class Asignatura(models.Model):
+    """Asignaturas según diagrama ER"""
+    nombre_asignatura = models.CharField(max_length=200, unique=True)
+    descripcion = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Asignatura'
+        verbose_name_plural = 'Asignaturas'
+        ordering = ['nombre_asignatura']
+    
+    def __str__(self):
+        return self.nombre_asignatura
+
+class Curso(models.Model):
+    """Cursos según diagrama de clases y ER"""
+    nombre_curso = models.CharField(max_length=100)
+    nivel = models.ForeignKey('NivelEducativo', on_delete=models.CASCADE, related_name='cursos')
+    docente_jefe = models.ForeignKey('Docente', on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos_a_cargo')
+    asignaturas = models.ManyToManyField('Asignatura', through='CursoAsignatura', related_name='cursos')
+    
+    class Meta:
+        verbose_name = 'Curso'
+        verbose_name_plural = 'Cursos'
+        ordering = ['nivel', 'nombre_curso']
+    
+    def __str__(self):
+        return f"{self.nivel.nombre} - {self.nombre_curso}"
+    
+    def agregar(self):
+        """Agregar nuevo curso"""
+        pass
+    
+    def modificar(self):
+        """Modificar curso existente"""
+        pass
+    
+    def eliminar(self):
+        """Eliminar curso"""
+        pass
+
+class CursoAsignatura(models.Model):
+    """Tabla intermedia entre Curso y Asignatura según diagrama ER"""
+    curso = models.ForeignKey('Curso', on_delete=models.CASCADE)
+    asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = ['curso', 'asignatura']
+        verbose_name = 'Curso-Asignatura'
+        verbose_name_plural = 'Cursos-Asignaturas'
+    
+    def __str__(self):
+        return f"{self.curso.nombre_curso} - {self.asignatura.nombre_asignatura}"
+
+class ObjetivoAprendizaje(models.Model):
+    """Objetivos de aprendizaje según diagrama de clases"""
+    descripcion = models.TextField()
+    nivel = models.CharField(max_length=50)
+    nivel_educativo = models.ForeignKey('NivelEducativo', on_delete=models.CASCADE, related_name='objetivos')
+    curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='objetivos')
+    
+    class Meta:
+        verbose_name = 'Objetivo de Aprendizaje'
+        verbose_name_plural = 'Objetivos de Aprendizaje'
+    
+    def __str__(self):
+        return f"{self.curso} - {self.descripcion[:50]}..."
+    
+    def agregar(self):
+        """Agregar nuevo objetivo"""
+        pass
+    
+    def modificar(self):
+        """Modificar objetivo existente"""
+        pass
+    
+    def eliminar(self):
+        """Eliminar objetivo"""
+        pass
+
+class RecursoPedagogico(models.Model):
+    """Recursos pedagógicos según diagrama de clases"""
+    nombre = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Recurso Pedagógico'
+        verbose_name_plural = 'Recursos Pedagógicos'
+        ordering = ['tipo', 'nombre']
+    
+    def __str__(self):
+        return f"{self.tipo} - {self.nombre}"
+    
+    def agregar(self):
+        """Agregar nuevo recurso"""
+        pass
+    
+    def modificar(self):
+        """Modificar recurso existente"""
+        pass
+    
+    def eliminar(self):
+        """Eliminar recurso"""
+        pass
 
 class Planificacion(models.Model):
     ESTADO_CHOICES = [
@@ -21,24 +235,72 @@ class Planificacion(models.Model):
         ('RECHAZADA', 'Rechazada'),
     ]
     TIPO_CHOICES = [
-        ('CURSO', 'Curso'),
-        ('TALLER', 'Taller'),
-        ('SEMINARIO', 'Seminario'),
+        ('ANUAL', 'Planificación Anual'),
+        ('UNIDAD', 'Planificación de Unidad'),
+        ('SEMANAL', 'Planificación Semanal'),
     ]
     
-    autor = models.ForeignKey('main.User', on_delete=models.CASCADE)
-    anio_academico = models.ForeignKey('main.AnioAcademico', on_delete=models.PROTECT, related_name='planificaciones')
+    # Campos básicos
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='BORRADOR')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    titulo = models.CharField(max_length=200)
     comentarios_validacion = models.TextField(blank=True, null=True)
-
+    
+    # Relaciones obligatorias según diagrama de clases
+    anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='planificaciones')
+    docente = models.ForeignKey('Docente', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
+    curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
+    asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
+    
+    # Relaciones con objetivos y recursos
+    objetivos_aprendizaje = models.ManyToManyField('ObjetivoAprendizaje', blank=True, related_name='planificaciones')
+    recursos_pedagogicos = models.ManyToManyField('RecursoPedagogico', blank=True, related_name='planificaciones')
+    
+    # Campo legacy para compatibilidad
+    autor = models.ForeignKey('User', on_delete=models.CASCADE, related_name='planificaciones_creadas')
+    
+    class Meta:
+        verbose_name = 'Planificación'
+        verbose_name_plural = 'Planificaciones'
+        ordering = ['-fecha_creacion']
+        # unique_together = ['anio_academico', 'docente', 'curso', 'asignatura', 'tipo']  # Temporalmente deshabilitado para migración
+    
     def __str__(self):
-        anio_nombre = self.anio_academico.nombre if self.anio_academico else 'Sin año'
-        return f"{self.titulo} - {self.autor.username} ({anio_nombre})"
+        return f"{self.titulo} - {self.curso} - {self.anio_academico}"
+    
+    def clean(self):
+        super().clean()
+        if not self.anio_academico:
+            raise ValidationError('La planificación debe tener un año académico asignado.')
+        if self.anio_academico.estado == 'CERRADO':
+            raise ValidationError('No se puede crear planificaciones para años académicos cerrados.')
+        if self.docente and self.autor and self.docente.usuario != self.autor:
+            raise ValidationError('El docente asignado debe coincidir con el autor de la planificación.')
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+    
+    def generar(self):
+        """Generar planificación según diagrama de clases"""
+        pass
+    
+    def editar(self):
+        """Editar planificación existente"""
+        pass
+    
+    def eliminar(self):
+        """Eliminar planificación"""
+        pass
+    
+    def listar(self):
+        """Listar planificaciones"""
+        pass
 
 class PlanificacionDetalle(Document):
     planificacion = StringField(required=True)  # Planificacion ID
@@ -50,6 +312,84 @@ class PlanificacionDetalle(Document):
 
     def __str__(self):
         return f"Detalle de {self.planificacion}"
+
+# Modelos de herencia según diagrama de clases
+class PlanificacionAnual(Planificacion):
+    """Planificación Anual - Hereda de Planificación"""
+    meses_academicos = models.IntegerField(default=12)
+    periodos_evaluacion = models.IntegerField(default=4)
+    
+    class Meta:
+        verbose_name = 'Planificación Anual'
+        verbose_name_plural = 'Planificaciones Anuales'
+    
+    def save(self, *args, **kwargs):
+        self.tipo = 'ANUAL'
+        super().save(*args, **kwargs)
+    
+    def planificar_anio(self):
+        """Método específico para planificación anual"""
+        pass
+    
+    def distribuir_contenidos(self):
+        """Distribuir contenidos a lo largo del año"""
+        pass
+
+class PlanificacionUnidad(Planificacion):
+    """Planificación de Unidad - Hereda de Planificación"""
+    numero_unidad = models.IntegerField()
+    planificacion_anual = models.ForeignKey(
+        'PlanificacionAnual', 
+        on_delete=models.CASCADE, 
+        related_name='unidades',
+        null=True, blank=True
+    )
+    semanas_duracion = models.IntegerField(default=4)
+    
+    class Meta:
+        verbose_name = 'Planificación de Unidad'
+        verbose_name_plural = 'Planificaciones de Unidad'
+        ordering = ['numero_unidad']
+    
+    def save(self, *args, **kwargs):
+        self.tipo = 'UNIDAD'
+        super().save(*args, **kwargs)
+    
+    def planificar_unidad(self):
+        """Método específico para planificación de unidad"""
+        pass
+    
+    def secuenciar_contenidos(self):
+        """Secuenciar contenidos de la unidad"""
+        pass
+
+class PlanificacionSemanal(Planificacion):
+    """Planificación Semanal - Hereda de Planificación"""
+    numero_semana = models.IntegerField()
+    planificacion_unidad = models.ForeignKey(
+        'PlanificacionUnidad', 
+        on_delete=models.CASCADE, 
+        related_name='semanas',
+        null=True, blank=True
+    )
+    horas_academicas = models.IntegerField(default=45)
+    
+    class Meta:
+        verbose_name = 'Planificación Semanal'
+        verbose_name_plural = 'Planificaciones Semanales'
+        ordering = ['numero_semana']
+    
+    def save(self, *args, **kwargs):
+        self.tipo = 'SEMANAL'
+        super().save(*args, **kwargs)
+    
+    def planificar_semana(self):
+        """Método específico para planificación semanal"""
+        pass
+    
+    def programar_actividades(self):
+        """Programar actividades semanales"""
+        pass
 
 class Evento(Document):
     titulo = StringField(max_length=200, required=True)

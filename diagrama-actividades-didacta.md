@@ -1,0 +1,208 @@
+# Diagrama de Actividades - Proyecto Didacta
+
+## Flujo Principal del Sistema de Planificaciones Académicas
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+    A(("Inicio del Sistema")) --> B{"¿Usuario autenticado?"}
+    B -- No --> C["Login/Register"]
+    B -- Sí --> D["Enrutador principal"]
+    C --> C1["Formulario Login"]
+    C1 --> C2{"¿Credenciales válidas?"}
+    C2 -- No --> C3["Error - Credenciales inválidas"]
+    C3 --> C1
+    C2 -- Sí --> C4["Generar JWT"]
+    C4 --> C5["Almacenar token"]
+    C5 --> D
+    D --> D1["Verificar configuración académica"]
+    D1 --> D2{"¿Hay año activo?"}
+    D2 -- No --> D3["Redireccionar a configuración"]
+    D2 -- Sí --> D4{"¿Rol usuario?"}
+    D3 --> E["Panel Configuración Académica"]
+    E --> E1["Crear/Gestionar Años Académicos"]
+    E1 --> E2["Formulario Año Académico"]
+    E2 --> E3["Guardar año académico"]
+    E3 --> E4{"¿Estado del año?"}
+    E4 -- BORRADOR --> E5["Año en borrador"]
+    E4 -- ACTIVO --> E6["Año activo"]
+    E4 -- CERRADO --> E7["Año cerrado"]
+    E5 --> E8["Opción activar año"]
+    E8 --> E6
+    E6 --> E9["Configurar periodos académicos"]
+    E9 --> E10["Configurar feriados/vacaciones"]
+    E10 --> D4
+    F["Dashboard Docente"] --> F1["Ver mis planificaciones"] & H["Ver Calendario"] & M["Logout"]
+    F1 --> F2{"¿Hay planificaciones?"}
+    F2 -- No --> F3["Sin planificaciones"]
+    F2 -- Sí --> F4["Lista de planificaciones"]
+    F5["Crear Nueva Planificación"] --> F6["Formulario Planificación"]
+    F6 --> F7["Guardar como BORRADOR"]
+    F7 --> F8["Actualizar lista"]
+    F8 --> F4
+    F4 --> F9{"¿Acción seleccionada?"}
+    F9 -- Editar --> F10["Editar planificación"]
+    F9 -- Ver detalle --> F11["Ver detalles"]
+    F9 -- Enviar validación --> F12{"¿Estado = BORRADOR?"}
+    F9 -- Eliminar --> F13["Eliminar planificación"]
+    F10 --> F6
+    F11 --> F14["Mostrar información detallada"]
+    F14 --> F4
+    F12 -- No --> F15["No se puede enviar"]
+    F12 -- Sí --> F16["Cambiar estado a ENVIADO"]
+    F15 --> F4
+    F16 --> F8
+    F13 --> F8
+    D4 L_D4_G_0@-- UTP/SUPERUSER --> G["Dashboard UTP"]
+    G --> G1["Panel de Validación"] & G18["Ver planificaciones aprobadas"] & G20["Ver planificaciones rechazadas"] & H & I["Gestión Años Académicos"] & M
+    G1 --> G2["Ver planificaciones pendientes"]
+    G2 --> G3{"¿Hay planificaciones pendientes?"}
+    G3 -- No --> G4["Sin planificaciones pendientes"]
+    G3 -- Sí --> G5["Lista de planificaciones pendientes"]
+    G5 --> G6{"¿Acción de validación?"}
+    G6 -- Revisar --> G7["Ver detalle planificación"]
+    G6 -- Aprobar --> G8["Aprobar planificación"]
+    G6 -- Rechazar --> G9["Rechazar planificación"]
+    G7 --> G10["Agregar comentarios"]
+    G10 --> G6
+    G8 --> G11["Comentarios aprobación"]
+    G11 --> G12["Estado = APROBADA"]
+    G12 --> G13["Notificar docente"]
+    G13 --> G14["Actualizar dashboard UTP"]
+    G14 --> G5
+    G9 --> G15["Comentarios rechazo"]
+    G15 --> G16["Estado = RECHAZADA"]
+    G16 --> G17["Notificar docente"]
+    G17 --> G14
+    G18 --> G19["Lista aprobadas"]
+    G20 --> G21["Lista rechazadas"]
+    H --> H1["Mostrar calendario académico"] & M
+    H1 --> H2["Planificaciones aprobadas"]
+    H2 --> H3["Eventos programados"]
+    H3 --> H4["Feriados y vacaciones"]
+    I --> I1{"¿Acción seleccionada?"} & J["Configurar Periodos Académicos"] & K["Configurar Feriados"] & L["Configurar Vacaciones"] & M
+    I1 -- Ver años --> I2["Lista años académicos"]
+    I1 -- Crear nuevo --> I3["Crear año académico"]
+    I1 -- Gestionar existente --> I4["Gestionar año"]
+    I2 --> I5["Filtrar por estado"]
+    I5 --> I6{"¿Estado filtro?"}
+    I6 -- BORRADOR --> I7["Años en borrador"]
+    I6 -- ACTIVO --> I8["Año activo"]
+    I6 -- CERRADO --> I9["Años cerrados"]
+    I3 --> I10["Formulario nuevo año"]
+    I10 --> I11["Guardar como BORRADOR"]
+    I11 --> I2
+    I4 --> I12{"¿Estado del año?"}
+    I12 -- BORRADOR --> I13["Opciones: Activar/Editar/Eliminar"]
+    I12 -- ACTIVO --> I14["Opciones: Cerrar/Ver"]
+    I12 -- CERRADO --> I15["Solo lectura"]
+    I13 -- Activar --> I16["Activar año"]
+    I16 --> I17["Confirmar activación"]
+    I17 -- Sí --> I18["Estado = ACTIVO"]
+    I17 -- No --> I13
+    I18 --> I19["Desactivar otros años"]
+    I19 --> I2
+    I14 -- Cerrar --> I20["Cerrar año académico"]
+    I20 --> I21["Solicitar clave confirmación"]
+    I21 --> I22{"¿Clave correcta?"}
+    I22 -- No --> I23["Error contraseña"]
+    I22 -- Sí --> I24["Estado = CERRADO"]
+    I23 --> I21
+    I24 --> I25["Bloquear modificaciones"]
+    I25 --> I2
+    J --> J1["Crear periodo"]
+    J1 --> J2["Formulario periodo"]
+    J2 --> J3{"¿Año cerrado?"}
+    J3 -- Sí --> J4["No se puede modificar"]
+    J3 -- No --> J5["Guardar periodo"]
+    J4 --> J1
+    J5 --> J6["Actualizar lista"]
+    J6 --> J1
+    K --> K1["Crear feriado"]
+    K1 --> K2["Formulario feriado"]
+    K2 --> K3{"¿Año cerrado?"}
+    K3 -- Sí --> K4["No se puede modificar"]
+    K3 -- No --> K5["Guardar feriado"]
+    K4 --> K1
+    K5 --> K6["Actualizar calendario"]
+    K6 --> K1
+    L --> L1["Crear periodo vacaciones"]
+    L1 --> L2["Formulario vacaciones"]
+    L2 --> L3{"¿Año cerrado?"}
+    L3 -- Sí --> L4["No se puede modificar"]
+    L3 -- No --> L5["Guardar vacaciones"]
+    L4 --> L1
+    L5 --> L6["Actualizar calendario"]
+    L6 --> L1
+    M --> M1["Eliminar token local"]
+    M1 --> M2["Redireccionar a login"]
+    M2 --> A
+    N{"¿Token válido?"} L_N_D_0@-. En cada petición .-> D
+    N -- No --> O["Refresh token"]
+    O --> P{"¿Refresh exitoso?"}
+    P -- No --> C
+    P L_P_D_0@-- Sí --> D
+    Q["Error de red"] --> Q1["Mostrar mensaje error"]
+    Q1 --> Q2["Reintentar"]
+    Q2 --> D
+    R["Error de validación"] --> R1["Mostrar errores campos"]
+    R1 --> R2["Corregir datos"]
+    D4 -- DOCENTE --> F
+    R2 --> F6
+     A:::startEnd
+     B:::decision
+     D:::enrutador
+     C2:::decision
+     C3:::error
+     D2:::decision
+     D4:::decision
+     E:::process
+     F:::process
+     H:::process
+     F2:::decision
+     F5:::success
+     F9:::decision
+     F12:::decision
+     F15:::error
+     F16:::success
+     G:::process
+     I:::process
+     G3:::decision
+     G6:::decision
+     G8:::success
+     G12:::success
+     G16:::success
+     I1:::decision
+     J:::process
+     K:::process
+     L:::process
+     I6:::decision
+     I12:::decision
+     I17:::decision
+     I18:::success
+     I22:::decision
+     I24:::success
+     J3:::decision
+     J4:::error
+     K3:::decision
+     K4:::error
+     L3:::decision
+     L4:::error
+     M2:::startEnd
+     N:::decision
+     P:::decision
+     Q:::error
+     R:::error
+    classDef startEnd fill:#e1f5fe,stroke:#01579b,stroke-width:10px,font-size:22px,color:#000
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000
+    classDef success fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef enrutador fill: #e1ccec, stroke-widht:4px,font-size:22px,color:#272048,height:95px
+    style A color:#FFFFFF,fill:#D50000,stroke:#00C853
+    L_D4_G_0@{ curve: linear } 
+    L_N_D_0@{ curve: linear } 
+    L_P_D_0@{ curve: linear }
