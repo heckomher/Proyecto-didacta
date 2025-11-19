@@ -7,14 +7,33 @@ from .views import (RegisterView, LoginView, logout_view, PlanificacionListCreat
                    PlanificacionDetalleView, current_user, verificar_anio_academico,
                    verificar_configuracion_academica,
                    AnioAcademicoViewSet, PeriodoAcademicoViewSet, 
-                   FeriadoViewSet, PeriodoVacacionesViewSet)
+                   FeriadoViewSet, PeriodoVacacionesViewSet,
+                   RolViewSet, DocenteViewSet, EquipoDirectivoViewSet,
+                   NivelEducativoViewSet, AsignaturaViewSet, CursoViewSet,
+                   ObjetivoAprendizajeViewSet, RecursoPedagogicoViewSet,
+                   PlanificacionAnualViewSet, PlanificacionUnidadViewSet, PlanificacionSemanalViewSet)
 
-# Router para los ViewSets de configuración académica
+# Router para los ViewSets
 router = DefaultRouter()
+# Configuración académica
 router.register(r'anios-academicos', AnioAcademicoViewSet, basename='anio-academico')
 router.register(r'periodos-academicos', PeriodoAcademicoViewSet, basename='periodo-academico')
 router.register(r'feriados', FeriadoViewSet, basename='feriado')
 router.register(r'vacaciones', PeriodoVacacionesViewSet, basename='vacaciones')
+# Gestión de usuarios y roles
+router.register(r'roles', RolViewSet, basename='rol')
+router.register(r'docentes', DocenteViewSet, basename='docente')
+router.register(r'equipo-directivo', EquipoDirectivoViewSet, basename='equipo-directivo')
+# Estructura académica
+router.register(r'niveles-educativos', NivelEducativoViewSet, basename='nivel-educativo')
+router.register(r'asignaturas', AsignaturaViewSet, basename='asignatura')
+router.register(r'cursos', CursoViewSet, basename='curso')
+router.register(r'objetivos-aprendizaje', ObjetivoAprendizajeViewSet, basename='objetivo-aprendizaje')
+router.register(r'recursos-pedagogicos', RecursoPedagogicoViewSet, basename='recurso-pedagogico')
+# Planificaciones específicas
+router.register(r'planificaciones-anuales', PlanificacionAnualViewSet, basename='planificacion-anual')
+router.register(r'planificaciones-unidad', PlanificacionUnidadViewSet, basename='planificacion-unidad')
+router.register(r'planificaciones-semanales', PlanificacionSemanalViewSet, basename='planificacion-semanal')
 
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),

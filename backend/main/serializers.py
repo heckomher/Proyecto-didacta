@@ -1,18 +1,39 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import Planificacion, PlanificacionDetalle, Evento, Calendario, AnioAcademico, PeriodoAcademico, Feriado, PeriodoVacaciones
+from .models import (Planificacion, PlanificacionDetalle, Evento, Calendario, AnioAcademico, 
+                    PeriodoAcademico, Feriado, PeriodoVacaciones, Rol, Docente, EquipoDirectivo,
+                    NivelEducativo, Asignatura, Curso, CursoAsignatura, ObjetivoAprendizaje,
+                    RecursoPedagogico, PlanificacionAnual, PlanificacionUnidad, PlanificacionSemanal)
 
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    full_name = serializers.SerializerMethodField()
+    perfil_docente = serializers.SerializerMethodField()
+    perfil_directivo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'role', 'password', 'password2', 'is_superuser', 'is_staff')
-        read_only_fields = ('is_superuser', 'is_staff')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'nombre', 'apellido', 
+                 'role', 'activo', 'full_name', 'perfil_docente', 'perfil_directivo',
+                 'password', 'password2', 'is_superuser', 'is_staff')
+        read_only_fields = ('is_superuser', 'is_staff', 'full_name', 'perfil_docente', 'perfil_directivo')
+    
+    def get_full_name(self, obj):
+        return f"{obj.nombre} {obj.apellido}".strip() or obj.get_full_name()
+    
+    def get_perfil_docente(self, obj):
+        if hasattr(obj, 'perfil_docente'):
+            return {'rut': obj.perfil_docente.rut, 'especialidad': obj.perfil_docente.especialidad}
+        return None
+    
+    def get_perfil_directivo(self, obj):
+        if hasattr(obj, 'perfil_directivo'):
+            return {'cargo': obj.perfil_directivo.cargo, 'departamento': obj.perfil_directivo.departamento}
+        return None
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -20,14 +41,10 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            role=validated_data['role']
-        )
-        user.set_password(validated_data['password'])
+        validated_data.pop('password2', None)
+        password = validated_data.pop('password')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
         user.save()
         return user
 
@@ -38,10 +55,29 @@ class LoginSerializer(serializers.Serializer):
 class PlanificacionSerializer(serializers.ModelSerializer):
     autor = serializers.StringRelatedField(read_only=True)
     anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    docente_nombre = serializers.SerializerMethodField()
+    curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)
+    asignatura_nombre = serializers.CharField(source='asignatura.nombre_asignatura', read_only=True)
+    objetivos_count = serializers.SerializerMethodField()
+    recursos_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Planificacion
-        fields = '__all__'
+        fields = ['id', 'titulo', 'descripcion', 'tipo', 'estado', 'fecha_creacion', 'fecha_modificacion',
+                 'fecha_inicio', 'fecha_fin', 'comentarios_validacion', 'anio_academico', 'anio_academico_nombre',
+                 'docente', 'docente_nombre', 'curso', 'curso_nombre', 'asignatura', 'asignatura_nombre',
+                 'objetivos_aprendizaje', 'objetivos_count', 'recursos_pedagogicos', 'recursos_count', 'autor']
+    
+    def get_docente_nombre(self, obj):
+        if obj.docente:
+            return f"{obj.docente.usuario.nombre} {obj.docente.usuario.apellido}".strip() or obj.docente.usuario.username
+        return None
+    
+    def get_objetivos_count(self, obj):
+        return obj.objetivos_aprendizaje.count()
+    
+    def get_recursos_count(self, obj):
+        return obj.recursos_pedagogicos.count()
     
     def validate_anio_academico(self, value):
         """Validar que el año académico existe y no está cerrado"""
@@ -137,3 +173,137 @@ class AnioAcademicoSerializer(serializers.ModelSerializer):
         fields = ['id', 'nombre', 'fecha_inicio', 'fecha_fin', 'estado', 'activo', 'cerrado', 'tipo_periodo', 
                   'periodos', 'feriados', 'vacaciones', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at', 'activo', 'cerrado']
+
+# Serializers para nuevos modelos
+class RolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rol
+        fields = ['id', 'nombre_rol', 'descripcion']
+
+class DocenteSerializer(serializers.ModelSerializer):
+    usuario_info = UserSerializer(source='usuario', read_only=True)
+    planificaciones_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Docente
+        fields = ['id', 'usuario', 'usuario_info', 'rut', 'especialidad', 'planificaciones_count']
+    
+    def get_planificaciones_count(self, obj):
+        return obj.planificaciones.count()
+
+class EquipoDirectivoSerializer(serializers.ModelSerializer):
+    usuario_info = UserSerializer(source='usuario', read_only=True)
+    
+    class Meta:
+        model = EquipoDirectivo
+        fields = ['id', 'usuario', 'usuario_info', 'cargo', 'departamento']
+
+class NivelEducativoSerializer(serializers.ModelSerializer):
+    cursos_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = NivelEducativo
+        fields = ['id', 'nombre', 'descripcion', 'cursos_count']
+    
+    def get_cursos_count(self, obj):
+        return obj.cursos.count()
+
+class AsignaturaSerializer(serializers.ModelSerializer):
+    cursos_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Asignatura
+        fields = ['id', 'nombre_asignatura', 'descripcion', 'cursos_count']
+    
+    def get_cursos_count(self, obj):
+        return obj.cursos.count()
+
+class CursoAsignaturaSerializer(serializers.ModelSerializer):
+    curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)
+    asignatura_nombre = serializers.CharField(source='asignatura.nombre_asignatura', read_only=True)
+    
+    class Meta:
+        model = CursoAsignatura
+        fields = ['id', 'curso', 'curso_nombre', 'asignatura', 'asignatura_nombre']
+
+class CursoSerializer(serializers.ModelSerializer):
+    nivel_nombre = serializers.CharField(source='nivel.nombre', read_only=True)
+    docente_jefe_info = DocenteSerializer(source='docente_jefe', read_only=True)
+    asignaturas_info = AsignaturaSerializer(source='asignaturas', many=True, read_only=True)
+    planificaciones_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Curso
+        fields = ['id', 'nombre_curso', 'nivel', 'nivel_nombre', 'docente_jefe', 'docente_jefe_info',
+                 'asignaturas', 'asignaturas_info', 'planificaciones_count']
+    
+    def get_planificaciones_count(self, obj):
+        return obj.planificaciones.count()
+
+class ObjetivoAprendizajeSerializer(serializers.ModelSerializer):
+    nivel_educativo_nombre = serializers.CharField(source='nivel_educativo.nombre', read_only=True)
+    curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)
+    
+    class Meta:
+        model = ObjetivoAprendizaje
+        fields = ['id', 'descripcion', 'nivel', 'nivel_educativo', 'nivel_educativo_nombre',
+                 'curso', 'curso_nombre']
+
+class RecursoPedagogicoSerializer(serializers.ModelSerializer):
+    planificaciones_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = RecursoPedagogico
+        fields = ['id', 'nombre', 'tipo', 'descripcion', 'planificaciones_count']
+    
+    def get_planificaciones_count(self, obj):
+        return obj.planificaciones.count()
+
+class PlanificacionAnualSerializer(serializers.ModelSerializer):
+    docente_info = DocenteSerializer(source='docente', read_only=True)
+    curso_info = CursoSerializer(source='curso', read_only=True)
+    asignatura_info = AsignaturaSerializer(source='asignatura', read_only=True)
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    unidades_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PlanificacionAnual
+        fields = ['id', 'titulo', 'descripcion', 'tipo', 'estado', 'fecha_creacion', 'fecha_modificacion',
+                 'fecha_inicio', 'fecha_fin', 'anio_academico', 'anio_academico_nombre', 'docente', 'docente_info',
+                 'curso', 'curso_info', 'asignatura', 'asignatura_info', 'meses_academicos', 'periodos_evaluacion',
+                 'unidades_count', 'objetivos_aprendizaje', 'recursos_pedagogicos']
+    
+    def get_unidades_count(self, obj):
+        return obj.unidades.count()
+
+class PlanificacionUnidadSerializer(serializers.ModelSerializer):
+    docente_info = DocenteSerializer(source='docente', read_only=True)
+    curso_info = CursoSerializer(source='curso', read_only=True)
+    asignatura_info = AsignaturaSerializer(source='asignatura', read_only=True)
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    planificacion_anual_titulo = serializers.CharField(source='planificacion_anual.titulo', read_only=True)
+    semanas_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PlanificacionUnidad
+        fields = ['id', 'titulo', 'descripcion', 'tipo', 'estado', 'fecha_creacion', 'fecha_modificacion',
+                 'fecha_inicio', 'fecha_fin', 'anio_academico', 'anio_academico_nombre', 'docente', 'docente_info',
+                 'curso', 'curso_info', 'asignatura', 'asignatura_info', 'numero_unidad', 'planificacion_anual',
+                 'planificacion_anual_titulo', 'semanas_duracion', 'semanas_count', 'objetivos_aprendizaje', 'recursos_pedagogicos']
+    
+    def get_semanas_count(self, obj):
+        return obj.semanas.count()
+
+class PlanificacionSemanalSerializer(serializers.ModelSerializer):
+    docente_info = DocenteSerializer(source='docente', read_only=True)
+    curso_info = CursoSerializer(source='curso', read_only=True)
+    asignatura_info = AsignaturaSerializer(source='asignatura', read_only=True)
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    planificacion_unidad_titulo = serializers.CharField(source='planificacion_unidad.titulo', read_only=True)
+    
+    class Meta:
+        model = PlanificacionSemanal
+        fields = ['id', 'titulo', 'descripcion', 'tipo', 'estado', 'fecha_creacion', 'fecha_modificacion',
+                 'fecha_inicio', 'fecha_fin', 'anio_academico', 'anio_academico_nombre', 'docente', 'docente_info',
+                 'curso', 'curso_info', 'asignatura', 'asignatura_info', 'numero_semana', 'planificacion_unidad',
+                 'planificacion_unidad_titulo', 'horas_academicas', 'objetivos_aprendizaje', 'recursos_pedagogicos']

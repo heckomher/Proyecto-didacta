@@ -10,9 +10,16 @@ from django.contrib.auth import get_user_model
 from .serializers import (UserSerializer, LoginSerializer, PlanificacionSerializer, 
                          PlanificacionDetalleSerializer, EventoSerializer, CalendarioSerializer,
                          AnioAcademicoSerializer, PeriodoAcademicoSerializer, 
-                         FeriadoSerializer, PeriodoVacacionesSerializer)
+                         FeriadoSerializer, PeriodoVacacionesSerializer, RolSerializer,
+                         DocenteSerializer, EquipoDirectivoSerializer, NivelEducativoSerializer,
+                         AsignaturaSerializer, CursoSerializer, ObjetivoAprendizajeSerializer,
+                         RecursoPedagogicoSerializer, PlanificacionAnualSerializer,
+                         PlanificacionUnidadSerializer, PlanificacionSemanalSerializer)
 from .models import (Planificacion, PlanificacionDetalle, Evento, Calendario,
-                    AnioAcademico, PeriodoAcademico, Feriado, PeriodoVacaciones)
+                    AnioAcademico, PeriodoAcademico, Feriado, PeriodoVacaciones,
+                    Rol, Docente, EquipoDirectivo, NivelEducativo, Asignatura, Curso,
+                    ObjetivoAprendizaje, RecursoPedagogico, PlanificacionAnual,
+                    PlanificacionUnidad, PlanificacionSemanal)
 
 User = get_user_model()
 
@@ -56,14 +63,26 @@ class PlanificacionListCreateView(generics.ListCreateAPIView):
                 raise serializers.ValidationError({
                     "anio_academico": "No hay año académico activo. Debe configurarse un año académico antes de crear planificaciones."
                 })
-            serializer.save(autor=self.request.user, anio_academico=anio_activo)
+            serializer.validated_data['anio_academico'] = anio_activo
         else:
             # Validar que no se puedan crear planificaciones en años cerrados
             if anio_academico.estado == 'CERRADO':
                 raise serializers.ValidationError({
                     "anio_academico": "No se pueden crear planificaciones en un año académico cerrado."
                 })
-            serializer.save(autor=self.request.user)
+        
+        # Si el usuario es docente y no se especifica docente, asignar automáticamente
+        docente = serializer.validated_data.get('docente')
+        if not docente and self.request.user.role == 'DOCENTE':
+            try:
+                docente_perfil = Docente.objects.get(usuario=self.request.user)
+                serializer.validated_data['docente'] = docente_perfil
+            except Docente.DoesNotExist:
+                raise serializers.ValidationError({
+                    "docente": "El usuario no tiene un perfil de docente asociado."
+                })
+        
+        serializer.save(autor=self.request.user)
 
 class PlanificacionDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PlanificacionSerializer
@@ -388,3 +407,112 @@ def verificar_configuracion_academica(request):
             'fecha_fin': anio_activo.fecha_fin
         }
     })
+
+# ViewSets para nuevos modelos
+class RolViewSet(viewsets.ModelViewSet):
+    queryset = Rol.objects.all()
+    serializer_class = RolSerializer
+    permission_classes = [IsUTPOrReadOnly]
+
+class DocenteViewSet(viewsets.ModelViewSet):
+    queryset = Docente.objects.select_related('usuario').all()
+    serializer_class = DocenteSerializer
+    permission_classes = [IsUTPOrReadOnly]
+    
+    def get_queryset(self):
+        queryset = Docente.objects.select_related('usuario').all()
+        if self.request.user.role == 'DOCENTE':
+            # Los docentes solo pueden ver su propio perfil
+            queryset = queryset.filter(usuario=self.request.user)
+        return queryset
+
+class EquipoDirectivoViewSet(viewsets.ModelViewSet):
+    queryset = EquipoDirectivo.objects.select_related('usuario').all()
+    serializer_class = EquipoDirectivoSerializer
+    permission_classes = [IsUTPOrReadOnly]
+
+class NivelEducativoViewSet(viewsets.ModelViewSet):
+    queryset = NivelEducativo.objects.all()
+    serializer_class = NivelEducativoSerializer
+    permission_classes = [IsUTPOrReadOnly]
+
+class AsignaturaViewSet(viewsets.ModelViewSet):
+    queryset = Asignatura.objects.all()
+    serializer_class = AsignaturaSerializer
+    permission_classes = [IsUTPOrReadOnly]
+
+class CursoViewSet(viewsets.ModelViewSet):
+    queryset = Curso.objects.select_related('nivel', 'docente_jefe').prefetch_related('asignaturas').all()
+    serializer_class = CursoSerializer
+    permission_classes = [IsUTPOrReadOnly]
+    
+    def get_queryset(self):
+        queryset = Curso.objects.select_related('nivel', 'docente_jefe').prefetch_related('asignaturas').all()
+        nivel_id = self.request.query_params.get('nivel', None)
+        if nivel_id:
+            queryset = queryset.filter(nivel_id=nivel_id)
+        return queryset
+
+class ObjetivoAprendizajeViewSet(viewsets.ModelViewSet):
+    queryset = ObjetivoAprendizaje.objects.select_related('nivel_educativo', 'curso').all()
+    serializer_class = ObjetivoAprendizajeSerializer
+    permission_classes = [IsUTPOrReadOnly]
+    
+    def get_queryset(self):
+        queryset = ObjetivoAprendizaje.objects.select_related('nivel_educativo', 'curso').all()
+        curso_id = self.request.query_params.get('curso', None)
+        nivel_id = self.request.query_params.get('nivel_educativo', None)
+        if curso_id:
+            queryset = queryset.filter(curso_id=curso_id)
+        if nivel_id:
+            queryset = queryset.filter(nivel_educativo_id=nivel_id)
+        return queryset
+
+class RecursoPedagogicoViewSet(viewsets.ModelViewSet):
+    queryset = RecursoPedagogico.objects.all()
+    serializer_class = RecursoPedagogicoSerializer
+    permission_classes = [IsUTPOrReadOnly]
+    
+    def get_queryset(self):
+        queryset = RecursoPedagogico.objects.all()
+        tipo = self.request.query_params.get('tipo', None)
+        if tipo:
+            queryset = queryset.filter(tipo__icontains=tipo)
+        return queryset
+
+# ViewSets para tipos específicos de planificación
+class PlanificacionAnualViewSet(viewsets.ModelViewSet):
+    serializer_class = PlanificacionAnualSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = PlanificacionAnual.objects.select_related(
+            'anio_academico', 'docente__usuario', 'curso', 'asignatura'
+        ).all()
+        if self.request.user.role == 'UTP':
+            return queryset
+        return queryset.filter(autor=self.request.user)
+
+class PlanificacionUnidadViewSet(viewsets.ModelViewSet):
+    serializer_class = PlanificacionUnidadSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = PlanificacionUnidad.objects.select_related(
+            'anio_academico', 'docente__usuario', 'curso', 'asignatura', 'planificacion_anual'
+        ).all()
+        if self.request.user.role == 'UTP':
+            return queryset
+        return queryset.filter(autor=self.request.user)
+
+class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
+    serializer_class = PlanificacionSemanalSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = PlanificacionSemanal.objects.select_related(
+            'anio_academico', 'docente__usuario', 'curso', 'asignatura', 'planificacion_unidad'
+        ).all()
+        if self.request.user.role == 'UTP':
+            return queryset
+        return queryset.filter(autor=self.request.user)
