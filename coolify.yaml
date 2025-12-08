@@ -18,7 +18,7 @@ services:
     build: ./backend
     restart: always
     expose:
-      - "8000"
+      - "8001"
     depends_on:
       db_mysql:
         condition: service_healthy
