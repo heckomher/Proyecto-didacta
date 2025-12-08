@@ -437,12 +437,12 @@ const ConfiguracionAcademica = () => {
             Años Académicos en Borrador
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Los años en borrador deben ser activados para poder usarse en el sistema.
+            Configure los periodos, feriados y vacaciones, luego active el año para poder usarlo en el sistema.
           </p>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {aniosAcademicos.filter(a => a.estado === 'BORRADOR').map((anio) => (
               <div key={anio.id} className="border border-blue-300 dark:border-blue-600 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                       {anio.nombre}
@@ -463,6 +463,105 @@ const ConfiguracionAcademica = () => {
                     </svg>
                     Activar
                   </button>
+                </div>
+
+                {/* Periodos del año en borrador */}
+                <div className="mt-3 bg-white dark:bg-gray-700 rounded p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 text-sm">Periodos</h4>
+                    <button
+                      onClick={() => {
+                        setNuevoPeriodo({ ...nuevoPeriodo, anio_academico: anio.id });
+                        setShowPeriodoForm(true);
+                      }}
+                      className="text-xs px-2 py-1 bg-secondary-600 text-white rounded hover:bg-secondary-700"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                  {anio.periodos?.length > 0 ? (
+                    <div className="space-y-1">
+                      {anio.periodos.map((periodo) => (
+                        <div key={periodo.id} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-800 dark:text-gray-200">{periodo.nombre} ({periodo.fecha_inicio} - {periodo.fecha_fin})</span>
+                          <button
+                            onClick={() => eliminarItem('periodo', periodo.id)}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 text-xs"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">Sin periodos</p>
+                  )}
+                </div>
+
+                {/* Feriados del año en borrador */}
+                <div className="mt-2 bg-white dark:bg-gray-700 rounded p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 text-sm">Feriados</h4>
+                    <button
+                      onClick={() => {
+                        setNuevoFeriado({ ...nuevoFeriado, anio_academico: anio.id });
+                        setShowFeriadoForm(true);
+                      }}
+                      className="text-xs px-2 py-1 bg-secondary-600 text-white rounded hover:bg-secondary-700"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                  {anio.feriados?.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-1">
+                      {anio.feriados.map((feriado) => (
+                        <div key={feriado.id} className="flex justify-between items-center text-xs">
+                          <span className="text-gray-800 dark:text-gray-200">{feriado.nombre} ({feriado.fecha})</span>
+                          <button
+                            onClick={() => eliminarItem('feriado', feriado.id)}
+                            className="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">Sin feriados</p>
+                  )}
+                </div>
+
+                {/* Vacaciones del año en borrador */}
+                <div className="mt-2 bg-white dark:bg-gray-700 rounded p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 text-sm">Vacaciones</h4>
+                    <button
+                      onClick={() => {
+                        setNuevaVacacion({ ...nuevaVacacion, anio_academico: anio.id });
+                        setShowVacacionForm(true);
+                      }}
+                      className="text-xs px-2 py-1 bg-secondary-600 text-white rounded hover:bg-secondary-700"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                  {anio.vacaciones?.length > 0 ? (
+                    <div className="space-y-1">
+                      {anio.vacaciones.map((vacacion) => (
+                        <div key={vacacion.id} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-800 dark:text-gray-200">{vacacion.nombre} ({vacacion.fecha_inicio} - {vacacion.fecha_fin})</span>
+                          <button
+                            onClick={() => eliminarItem('vacacion', vacacion.id)}
+                            className="text-red-600 hover:text-red-800 text-xs"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">Sin vacaciones</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -584,6 +683,7 @@ const ConfiguracionAcademica = () => {
                   onChange={(e) => setNuevoPeriodo({ ...nuevoPeriodo, nombre: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                   required
+                  placeholder="Ej: Primer Semestre"
                 />
               </div>
               <div className="mb-4">

@@ -161,7 +161,7 @@ class PeriodoVacacionesSerializer(serializers.ModelSerializer):
 class PeriodoAcademicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = PeriodoAcademico
-        fields = ['id', 'nombre', 'numero', 'fecha_inicio', 'fecha_fin']
+        fields = ['id', 'nombre', 'numero', 'fecha_inicio', 'fecha_fin', 'anio_academico']
 
 class AnioAcademicoSerializer(serializers.ModelSerializer):
     periodos = PeriodoAcademicoSerializer(many=True, read_only=True)
