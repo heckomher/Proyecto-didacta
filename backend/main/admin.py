@@ -15,14 +15,14 @@ class PeriodoVacacionesInline(admin.TabularInline):
 
 @admin.register(AnioAcademico)
 class AnioAcademicoAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'fecha_inicio', 'fecha_fin', 'tipo_periodo', 'activo', 'cerrado']
-    list_filter = ['activo', 'cerrado', 'tipo_periodo']
+    list_display = ['nombre', 'fecha_inicio', 'fecha_fin', 'tipo_periodo', 'estado', 'created_at']
+    list_filter = ['estado', 'tipo_periodo']
     search_fields = ['nombre']
     inlines = [PeriodoAcademicoInline, FeriadoInline, PeriodoVacacionesInline]
     
     fieldsets = (
         ('Información General', {
-            'fields': ('nombre', 'activo', 'cerrado', 'tipo_periodo')
+            'fields': ('nombre', 'estado', 'tipo_periodo')
         }),
         ('Fechas', {
             'fields': ('fecha_inicio', 'fecha_fin')
@@ -31,13 +31,13 @@ class AnioAcademicoAdmin(admin.ModelAdmin):
     
     def get_readonly_fields(self, request, obj=None):
         """Hacer todos los campos de solo lectura si el año está cerrado"""
-        if obj and obj.cerrado:
-            return [field.name for field in self.model._meta.fields]
-        return []
+        if obj and obj.is_cerrado:
+            return [field.name for field in self.model._meta.fields if field.name not in ['activo', 'cerrado']]
+        return ['activo', 'cerrado']
     
     def has_delete_permission(self, request, obj=None):
         """No permitir eliminar años cerrados"""
-        if obj and obj.cerrado:
+        if obj and obj.is_cerrado:
             return False
         return super().has_delete_permission(request, obj)
 

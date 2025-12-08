@@ -20,8 +20,7 @@ const ConfiguracionAcademica = () => {
     nombre: new Date().getFullYear().toString(),
     fecha_inicio: '',
     fecha_fin: '',
-    tipo_periodo: 'SEMESTRE',
-    activo: true
+    tipo_periodo: 'SEMESTRE'
   });
 
   const [nuevoPeriodo, setNuevoPeriodo] = useState({
@@ -47,15 +46,25 @@ const ConfiguracionAcademica = () => {
     anio_academico: null
   });
 
+  // Helper para obtener headers con token
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: { 'Authorization': `Bearer ${token}` }
+    };
+  };
+
   useEffect(() => {
     cargarDatos();
   }, []);
 
   const cargarDatos = async () => {
     try {
+      const config = getAuthHeaders();
+      
       const [aniosRes, activoRes] = await Promise.all([
-        axios.get('http://localhost/api/anios-academicos/'),
-        axios.get('http://localhost/api/anios-academicos/activo/')
+        axios.get('http://localhost/api/anios-academicos/', config),
+        axios.get('http://localhost/api/anios-academicos/activo/', config).catch(() => ({ data: null }))
       ]);
       setAniosAcademicos(aniosRes.data);
       setAnioActivo(activoRes.data);
@@ -72,16 +81,19 @@ const ConfiguracionAcademica = () => {
   const crearAnioAcademico = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/anios-academicos/', nuevoAnio);
+      await axios.post('http://localhost/api/anios-academicos/', {
+        ...nuevoAnio,
+        estado: 'BORRADOR'
+      }, getAuthHeaders());
       setShowNuevoAnio(false);
       setNuevoAnio({
         nombre: new Date().getFullYear().toString(),
         fecha_inicio: '',
         fecha_fin: '',
-        tipo_periodo: 'SEMESTRE',
-        activo: true
+        tipo_periodo: 'SEMESTRE'
       });
       cargarDatos();
+      alert('Año académico creado en borrador. Actívelo para poder usarlo.');
     } catch (error) {
       console.error('Error creando año académico:', error);
       alert('Error al crear año académico: ' + (error.response?.data?.detail || error.message));
@@ -91,7 +103,7 @@ const ConfiguracionAcademica = () => {
   const crearPeriodo = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/periodos-academicos/', nuevoPeriodo);
+      await axios.post('http://localhost/api/periodos-academicos/', nuevoPeriodo, getAuthHeaders());
       setShowPeriodoForm(false);
       setNuevoPeriodo({
         nombre: '',
@@ -110,7 +122,7 @@ const ConfiguracionAcademica = () => {
   const crearFeriado = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/feriados/', nuevoFeriado);
+      await axios.post('http://localhost/api/feriados/', nuevoFeriado, getAuthHeaders());
       setShowFeriadoForm(false);
       setNuevoFeriado({
         nombre: '',
@@ -128,7 +140,7 @@ const ConfiguracionAcademica = () => {
   const crearVacacion = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/vacaciones/', nuevaVacacion);
+      await axios.post('http://localhost/api/vacaciones/', nuevaVacacion, getAuthHeaders());
       setShowVacacionForm(false);
       setNuevaVacacion({
         nombre: '',
@@ -153,12 +165,26 @@ const ConfiguracionAcademica = () => {
         feriado: 'feriados',
         vacacion: 'vacaciones'
       };
-      await axios.delete(`http://localhost/api/${endpoints[tipo]}/${id}/`);
+      await axios.delete(`http://localhost/api/${endpoints[tipo]}/${id}/`, getAuthHeaders());
       cargarDatos();
     } catch (error) {
       console.error('Error eliminando:', error);
       const mensaje = error.response?.data?.detail || error.response?.data?.[0] || error.message;
       alert('Error al eliminar: ' + mensaje);
+    }
+  };
+
+  const activarAnioAcademico = async (id) => {
+    if (!confirm('¿Está seguro de activar este año académico? Se desactivará el año activo actual (si existe).')) {
+      return;
+    }
+    try {
+      await axios.post(`http://localhost/api/anios-academicos/${id}/activar/`, {}, getAuthHeaders());
+      cargarDatos();
+      alert('Año académico activado exitosamente.');
+    } catch (error) {
+      console.error('Error activando año:', error);
+      alert('Error al activar año académico: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -403,6 +429,46 @@ const ConfiguracionAcademica = () => {
           <p className="text-gray-500 italic">No hay año académico activo. Cree uno nuevo.</p>
         )}
       </div>
+
+      {/* Años Académicos en Borrador */}
+      {aniosAcademicos && aniosAcademicos.filter(a => a.estado === 'BORRADOR').length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            Años Académicos en Borrador
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Los años en borrador deben ser activados para poder usarse en el sistema.
+          </p>
+          <div className="space-y-3">
+            {aniosAcademicos.filter(a => a.estado === 'BORRADOR').map((anio) => (
+              <div key={anio.id} className="border border-blue-300 dark:border-blue-600 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                      {anio.nombre}
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+                        📝 Borrador
+                      </span>
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {anio.fecha_inicio} - {anio.fecha_fin} | {anio.tipo_periodo}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => activarAnioAcademico(anio.id)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition inline-flex items-center gap-2"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Activar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Historial de Años Académicos Cerrados */}
       {aniosAcademicos.filter(a => a.cerrado).length > 0 && (
