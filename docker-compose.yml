@@ -9,15 +9,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  db_mongo:
-    image: mongo:5.0
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpassword
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
 
   backend:
     build: ./backend
@@ -25,7 +16,7 @@ services:
       - "8000:8000"
     depends_on:
       - db_mysql
-      - db_mongo
+
     environment:
       - DJANGO_SETTINGS_MODULE=backend.settings
     volumes:

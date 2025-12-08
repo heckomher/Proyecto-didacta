@@ -14,7 +14,7 @@ const CalendarView = () => {
 
   const fetchAnioActivo = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost/api/anios-academicos/activo/');
+      const response = await axios.get('/api/anios-academicos/activo/');
       setAnioActivo(response.data);
     } catch (error) {
       console.error('Error fetching año activo', error);
@@ -62,7 +62,7 @@ const CalendarView = () => {
   // Combinar eventos del año académico con eventos regulares
   const allEvents = React.useMemo(() => {
     const academicEvents = [];
-    
+
     if (anioActivo) {
       // Agregar periodos académicos
       anioActivo.periodos?.forEach(periodo => {

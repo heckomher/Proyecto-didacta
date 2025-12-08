@@ -61,10 +61,10 @@ const ConfiguracionAcademica = () => {
   const cargarDatos = async () => {
     try {
       const config = getAuthHeaders();
-      
+
       const [aniosRes, activoRes] = await Promise.all([
-        axios.get('http://localhost/api/anios-academicos/', config),
-        axios.get('http://localhost/api/anios-academicos/activo/', config).catch(() => ({ data: null }))
+        axios.get('/api/anios-academicos/', config),
+        axios.get('/api/anios-academicos/activo/', config).catch(() => ({ data: null }))
       ]);
       setAniosAcademicos(aniosRes.data);
       setAnioActivo(activoRes.data);
@@ -81,7 +81,7 @@ const ConfiguracionAcademica = () => {
   const crearAnioAcademico = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/anios-academicos/', {
+      await axios.post('/api/anios-academicos/', {
         ...nuevoAnio,
         estado: 'BORRADOR'
       }, getAuthHeaders());
@@ -103,7 +103,7 @@ const ConfiguracionAcademica = () => {
   const crearPeriodo = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/periodos-academicos/', nuevoPeriodo, getAuthHeaders());
+      await axios.post('/api/periodos-academicos/', nuevoPeriodo, getAuthHeaders());
       setShowPeriodoForm(false);
       setNuevoPeriodo({
         nombre: '',
@@ -122,7 +122,7 @@ const ConfiguracionAcademica = () => {
   const crearFeriado = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/feriados/', nuevoFeriado, getAuthHeaders());
+      await axios.post('/api/feriados/', nuevoFeriado, getAuthHeaders());
       setShowFeriadoForm(false);
       setNuevoFeriado({
         nombre: '',
@@ -140,7 +140,7 @@ const ConfiguracionAcademica = () => {
   const crearVacacion = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost/api/vacaciones/', nuevaVacacion, getAuthHeaders());
+      await axios.post('/api/vacaciones/', nuevaVacacion, getAuthHeaders());
       setShowVacacionForm(false);
       setNuevaVacacion({
         nombre: '',
@@ -158,14 +158,14 @@ const ConfiguracionAcademica = () => {
 
   const eliminarItem = async (tipo, id) => {
     if (!confirm('¿Está seguro de eliminar este elemento?')) return;
-    
+
     try {
       const endpoints = {
         periodo: 'periodos-academicos',
         feriado: 'feriados',
         vacacion: 'vacaciones'
       };
-      await axios.delete(`http://localhost/api/${endpoints[tipo]}/${id}/`, getAuthHeaders());
+      await axios.delete(`/api/${endpoints[tipo]}/${id}/`, getAuthHeaders());
       cargarDatos();
     } catch (error) {
       console.error('Error eliminando:', error);
@@ -179,7 +179,7 @@ const ConfiguracionAcademica = () => {
       return;
     }
     try {
-      await axios.post(`http://localhost/api/anios-academicos/${id}/activar/`, {}, getAuthHeaders());
+      await axios.post(`/api/anios-academicos/${id}/activar/`, {}, getAuthHeaders());
       cargarDatos();
       alert('Año académico activado exitosamente.');
     } catch (error) {
@@ -190,7 +190,7 @@ const ConfiguracionAcademica = () => {
 
   const cerrarAnioAcademico = async (id) => {
     if (!confirm('¿Está seguro de cerrar este año académico? Una vez cerrado no se podrá modificar.')) return;
-    
+
     // Abrir modal de confirmación con contraseña
     setAnioACerrar(id);
     setShowConfirmarCierre(true);
@@ -201,14 +201,14 @@ const ConfiguracionAcademica = () => {
   const confirmarCierreConPassword = async (e) => {
     e.preventDefault();
     setErrorPassword('');
-    
+
     try {
       // Verificar contraseña del usuario actual
-      const { data: user } = await axios.get('http://localhost/api/auth/user/');
-      
+      const { data: user } = await axios.get('/api/auth/user/');
+
       // Intentar login para validar la contraseña
       try {
-        await axios.post('http://localhost/api/auth/login/', {
+        await axios.post('/api/auth/login/', {
           username: user.username,
           password: passwordCierre
         });
@@ -216,9 +216,9 @@ const ConfiguracionAcademica = () => {
         setErrorPassword('Contraseña incorrecta');
         return;
       }
-      
+
       // Si la contraseña es correcta, cerrar el año
-      await axios.post(`http://localhost/api/anios-academicos/${anioACerrar}/cerrar/`);
+      await axios.post(`/api/anios-academicos/${anioACerrar}/cerrar/`);
       setShowConfirmarCierre(false);
       setPasswordCierre('');
       setAnioACerrar(null);
@@ -272,7 +272,7 @@ const ConfiguracionAcademica = () => {
                   )}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  <span className="font-medium">Inicio:</span> {anioActivo.fecha_inicio} | 
+                  <span className="font-medium">Inicio:</span> {anioActivo.fecha_inicio} |
                   <span className="font-medium ml-2">Fin:</span> {anioActivo.fecha_fin}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -492,8 +492,8 @@ const ConfiguracionAcademica = () => {
                     </p>
                     <div className="mt-2 text-sm">
                       <span className="text-gray-600 dark:text-gray-400">
-                        Periodos: {anio.periodos?.length || 0} | 
-                        Feriados: {anio.feriados?.length || 0} | 
+                        Periodos: {anio.periodos?.length || 0} |
+                        Feriados: {anio.feriados?.length || 0} |
                         Vacaciones: {anio.vacaciones?.length || 0}
                       </span>
                     </div>
@@ -769,7 +769,7 @@ const ConfiguracionAcademica = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Confirme con su contraseña</p>
               </div>
             </div>
-            
+
             <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
               <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium mb-2">
                 ⚠️ Está a punto de cerrar el año académico permanentemente.
@@ -809,7 +809,7 @@ const ConfiguracionAcademica = () => {
                   </p>
                 )}
               </div>
-              
+
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -823,8 +823,8 @@ const ConfiguracionAcademica = () => {
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium inline-flex items-center justify-center gap-2"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

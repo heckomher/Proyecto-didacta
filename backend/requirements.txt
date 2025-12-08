@@ -7,3 +7,6 @@ djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
 dnspython
+gunicorn
+mysqlclient
+whitenoise

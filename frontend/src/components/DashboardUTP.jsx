@@ -17,7 +17,7 @@ const DashboardUTP = () => {
 
   const verificarAnioAcademico = async () => {
     try {
-      const response = await axios.get('http://localhost/api/verificar-anio-academico/');
+      const response = await axios.get('/api/verificar-anio-academico/');
       setTieneAnioActivo(response.data.tiene_anio_activo);
       if (!response.data.tiene_anio_activo) {
         // Redirigir a configuración académica si no hay año activo
@@ -34,7 +34,7 @@ const DashboardUTP = () => {
 
   const fetchPlanificaciones = useCallback(async () => {
     if (!tieneAnioActivo) return;
-    
+
     try {
       const response = await axios.get('/api/planificaciones/', {
         headers: { Authorization: `Bearer ${token}` },
@@ -53,9 +53,9 @@ const DashboardUTP = () => {
 
   const handleValidar = async (id, accion) => {
     try {
-      await axios.post(`/api/planificaciones/${id}/validar/`, { 
-        accion, 
-        comentarios: comentarios[id] || '' 
+      await axios.post(`/api/planificaciones/${id}/validar/`, {
+        accion,
+        comentarios: comentarios[id] || ''
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -114,7 +114,7 @@ const DashboardUTP = () => {
           </div>
         </div>
       </div>
-      
+
       {showActions && (
         <div className="mt-4 space-y-3">
           <textarea
@@ -263,7 +263,7 @@ const DashboardUTP = () => {
           </svg>
           Planificaciones Pendientes de Validación
         </h2>
-        
+
         {pendientes.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
