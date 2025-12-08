@@ -172,10 +172,16 @@ CORS_ALLOW_CREDENTIALS = True
 
 # MongoDB connection with mongoengine
 import mongoengine
-mongoengine.connect(
-    db=os.environ.get('MONGO_DATABASE', 'didacta_mongo'),
-    host=os.environ.get('MONGO_HOST', 'db_mongo'),
-    port=int(os.environ.get('MONGO_PORT', '27017')),
-    username=os.environ.get('MONGO_USER', 'root'),
-    password=os.environ.get('MONGO_PASSWORD', 'rootpassword'),
-)
+
+mongo_uri = os.environ.get('MONGO_URI')
+
+if mongo_uri:
+    mongoengine.connect(host=mongo_uri)
+else:
+    mongoengine.connect(
+        db=os.environ.get('MONGO_DATABASE', 'didacta_mongo'),
+        host=os.environ.get('MONGO_HOST', 'db_mongo'),
+        port=int(os.environ.get('MONGO_PORT', '27017')),
+        username=os.environ.get('MONGO_USER', 'root'),
+        password=os.environ.get('MONGO_PASSWORD', 'rootpassword'),
+    )
