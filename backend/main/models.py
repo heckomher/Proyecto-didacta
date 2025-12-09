@@ -558,4 +558,28 @@ def archivar_cursos_al_cerrar_anio(sender, instance, **kwargs):
     if instance.estado == 'CERRADO':
         Curso.objects.filter(anio_academico=instance, archivado=False).update(archivado=True)
 
+# Signal para crear perfiles automáticamente cuando se crea un usuario
+@receiver(post_save, sender=User)
+def crear_perfil_usuario(sender, instance, created, **kwargs):
+    """Crea automáticamente el perfil correspondiente según el rol del usuario"""
+    if created:
+        if instance.role == 'DOCENTE':
+            # Verificar si ya existe un perfil de docente
+            if not hasattr(instance, 'perfil_docente'):
+                # Generar RUT temporal si no se proporciona
+                rut_temp = f"pending-{instance.id}"
+                Docente.objects.create(
+                    usuario=instance,
+                    rut=rut_temp,
+                    especialidad="Sin especialidad"
+                )
+        elif instance.role == 'EQUIPO_DIRECTIVO':
+            # Verificar si ya existe un perfil directivo
+            if not hasattr(instance, 'perfil_directivo'):
+                EquipoDirectivo.objects.create(
+                    usuario=instance,
+                    cargo="Sin cargo",
+                    departamento="Sin departamento"
+                )
+
 # Create your models here.

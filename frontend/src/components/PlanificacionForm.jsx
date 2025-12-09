@@ -74,8 +74,9 @@ const PlanificacionForm = ({ planificacion, onSave, onCancel }) => {
         await axios.put(`/api/planificaciones/${planificacion.id}/detalle/`, detalleData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-      } else {
-        await axios.post(`/planificaciones/${response.data.id}/detalle/`, detalleData, {
+      } else if (response.data.id) {
+        // Para crear un nuevo detalle, usar PUT en lugar de POST
+        await axios.put(`/api/planificaciones/${response.data.id}/detalle/`, detalleData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }

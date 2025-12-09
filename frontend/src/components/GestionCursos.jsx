@@ -86,12 +86,16 @@ const GestionCursos = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('Guardando curso con datos:', formData);
+    
     try {
       if (editingCurso) {
-        await axios.put(`/cursos/${editingCurso.id}/`, formData, getAuthHeaders());
+        const response = await axios.put(`/cursos/${editingCurso.id}/`, formData, getAuthHeaders());
+        console.log('Respuesta del servidor:', response.data);
         alert('Curso actualizado exitosamente');
       } else {
-        await axios.post('/cursos/', formData, getAuthHeaders());
+        const response = await axios.post('/cursos/', formData, getAuthHeaders());
+        console.log('Respuesta del servidor:', response.data);
         alert('Curso creado exitosamente');
       }
       setShowForm(false);
@@ -113,13 +117,15 @@ const GestionCursos = () => {
 
   const editarCurso = (curso) => {
     setEditingCurso(curso);
+    // Extraer solo los IDs de las asignaturas
+    const asignaturasIds = curso.asignaturas?.map(a => typeof a === 'number' ? a : a.id) || [];
     setFormData({
       nombre_curso: curso.nombre_curso,
       nivel: curso.nivel,
       paralelo: curso.paralelo || '',
       anio_academico: curso.anio_academico,
       capacidad_maxima: curso.capacidad_maxima,
-      asignaturas: curso.asignaturas || []
+      asignaturas: asignaturasIds
     });
     cargarAsignaturasSugeridas(curso.nivel);
     setShowForm(true);

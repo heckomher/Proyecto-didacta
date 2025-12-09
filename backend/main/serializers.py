@@ -180,13 +180,26 @@ class RolSerializer(serializers.ModelSerializer):
 
 class DocenteSerializer(serializers.ModelSerializer):
     usuario_info = UserSerializer(source='usuario', read_only=True)
-    usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
+    usuario_nombre = serializers.SerializerMethodField()
     planificaciones_count = serializers.SerializerMethodField()
     asignaturas_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Docente
         fields = ['id', 'usuario', 'usuario_info', 'usuario_nombre', 'rut', 'especialidad', 'planificaciones_count', 'asignaturas_count']
+    
+    def get_usuario_nombre(self, obj):
+        """Return full name from nombre/apellido or username as fallback"""
+        nombre = obj.usuario.nombre or ""
+        apellido = obj.usuario.apellido or ""
+        
+        if nombre and apellido:
+            return f"{nombre} {apellido}"
+        elif nombre:
+            return nombre
+        elif apellido:
+            return apellido
+        return obj.usuario.username
     
     def get_planificaciones_count(self, obj):
         # Count planificaciones through curso_asignatura relationship
@@ -263,6 +276,8 @@ class CursoSerializer(serializers.ModelSerializer):
     asignaturas_asignadas = CursoAsignaturaSerializer(many=True, read_only=True)
     planificaciones_count = serializers.SerializerMethodField()
     anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    # Campo escribible explícito para asignaturas
+    asignaturas = serializers.PrimaryKeyRelatedField(many=True, queryset=Asignatura.objects.all(), required=False)
     
     class Meta:
         model = Curso
@@ -272,6 +287,34 @@ class CursoSerializer(serializers.ModelSerializer):
     
     def get_planificaciones_count(self, obj):
         return obj.planificaciones_legacy.count() + sum(ca.planificaciones.count() for ca in obj.asignaturas_asignadas.all())
+    
+    def create(self, validated_data):
+        asignaturas = validated_data.pop('asignaturas', [])
+        curso = Curso.objects.create(**validated_data)
+        if asignaturas:
+            curso.asignaturas.set(asignaturas)
+        return curso
+    
+    def update(self, instance, validated_data):
+        asignaturas = validated_data.pop('asignaturas', None)
+        
+        print(f"[SERIALIZER UPDATE] validated_data: {validated_data}")
+        print(f"[SERIALIZER UPDATE] asignaturas extraídas: {asignaturas}")
+        
+        # Actualizar campos básicos
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        print(f"[SERIALIZER UPDATE] Curso guardado, ahora actualizando asignaturas...")
+        
+        # Actualizar asignaturas si se proporcionaron
+        if asignaturas is not None:
+            print(f"[SERIALIZER UPDATE] Asignando {len(asignaturas)} asignaturas al curso")
+            instance.asignaturas.set(asignaturas)
+            print(f"[SERIALIZER UPDATE] Asignaturas después de set: {list(instance.asignaturas.all())}")
+        
+        return instance
 
 class ObjetivoAprendizajeSerializer(serializers.ModelSerializer):
     nivel_educativo_nombre = serializers.CharField(source='nivel_educativo.nombre', read_only=True)

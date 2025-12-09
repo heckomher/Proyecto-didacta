@@ -48,6 +48,22 @@ const GestionUsuarios = () => {
       return;
     }
 
+    // Validar contraseña
+    if (formData.password.length < 8) {
+      alert('⚠️ Contraseña débil: Debe tener al menos 8 caracteres');
+      return;
+    }
+
+    if (/^\d+$/.test(formData.password)) {
+      alert('⚠️ Contraseña débil: No puede contener solo números');
+      return;
+    }
+
+    if (['12345678', '123456789', 'password', 'contraseña', 'qwerty'].includes(formData.password.toLowerCase())) {
+      alert('⚠️ Contraseña débil: Esta contraseña es muy común. Use una combinación de letras y números');
+      return;
+    }
+
     try {
       await axios.post('/auth/register/', formData, getAuthHeaders());
       alert('Usuario creado exitosamente');
@@ -64,7 +80,18 @@ const GestionUsuarios = () => {
       cargarUsuarios();
     } catch (error) {
       console.error('Error creando usuario:', error);
-      alert('Error al crear usuario: ' + (error.response?.data?.detail || error.message));
+      
+      // Mostrar errores de validación del backend de forma clara
+      if (error.response?.data?.password) {
+        const passwordErrors = error.response.data.password;
+        if (Array.isArray(passwordErrors)) {
+          alert('⚠️ Contraseña no válida:\n' + passwordErrors.join('\n'));
+        } else {
+          alert('⚠️ Contraseña no válida: ' + passwordErrors);
+        }
+      } else {
+        alert('Error al crear usuario: ' + (error.response?.data?.detail || error.message));
+      }
     }
   };
 
@@ -221,6 +248,9 @@ const GestionUsuarios = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Mínimo 8 caracteres. Debe incluir letras y números.
+                </p>
               </div>
 
               <div className="mb-4">

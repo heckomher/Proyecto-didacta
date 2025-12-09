@@ -7,12 +7,16 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
+import logging
+
+logger = logging.getLogger(__name__)
 from .serializers import (UserSerializer, LoginSerializer, PlanificacionSerializer, 
                          PlanificacionDetalleSerializer, EventoSerializer, CalendarioSerializer,
                          AnioAcademicoSerializer, PeriodoAcademicoSerializer, 
                          FeriadoSerializer, PeriodoVacacionesSerializer, RolSerializer,
                          DocenteSerializer, EquipoDirectivoSerializer, NivelEducativoSerializer,
-                         AsignaturaSerializer, CursoSerializer, ObjetivoAprendizajeSerializer,
+                         AsignaturaSerializer, CursoSerializer, CursoAsignaturaSerializer,
+                         ObjetivoAprendizajeSerializer,
                          RecursoPedagogicoSerializer, PlanificacionAnualSerializer,
                          PlanificacionUnidadSerializer, PlanificacionSemanalSerializer)
 from .models import (Planificacion, PlanificacionDetalle, Evento, Calendario,
@@ -29,8 +33,19 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
+        logger.error(f"[REGISTER] Datos recibidos: {request.data}")
+        logger.error(f"[REGISTER] Usuario autenticado: {request.user.is_authenticated}, Role: {getattr(request.user, 'role', None)}")
+        
         if User.objects.exists() and (not request.user.is_authenticated or request.user.role != 'UTP'):
+            logger.error("[REGISTER] Permiso denegado: Usuario no es UTP")
             return Response({"error": "Only UTP can register new users."}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"[REGISTER] Errores de validación: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        logger.error(f"[REGISTER] Serializer válido, creando usuario...")
         return super().create(request, *args, **kwargs)
 
 class LoginView(TokenObtainPairView):
@@ -181,16 +196,39 @@ class PlanificacionDetalleView(generics.RetrieveUpdateAPIView):
         try:
             return PlanificacionDetalle.objects.get(planificacion=planificacion_id)
         except PlanificacionDetalle.DoesNotExist:
-            raise Http404
+            # For POST/PUT on non-existent detalle, return None to trigger creation
+            return None
 
-    def perform_update(self, serializer):
+    def update(self, request, *args, **kwargs):
         planificacion_id = self.kwargs.get('pk')
-        # Ensure the user owns the planificacion
+        
+        # Verify planificacion ownership
         try:
-            planificacion = Planificacion.objects.get(id=planificacion_id, autor=self.request.user)
+            planificacion = Planificacion.objects.get(id=planificacion_id, autor=request.user)
         except Planificacion.DoesNotExist:
-            raise serializers.ValidationError("Planificación no encontrada o no autorizada.")
-        serializer.save()
+            return Response(
+                {"error": "Planificación no encontrada o no autorizada."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Try to get existing detalle, or create new one
+        detalle = PlanificacionDetalle.objects.filter(planificacion=planificacion_id).first()
+        
+        if detalle:
+            # Update existing detalle
+            serializer = self.get_serializer(detalle, data=request.data, partial=False)
+        else:
+            # Create new detalle
+            serializer = self.get_serializer(data=request.data)
+        
+        serializer.is_valid(raise_exception=True)
+        serializer.save(planificacion=planificacion)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request, *args, **kwargs):
+        """Allow POST method for creating detalle"""
+        return self.update(request, *args, **kwargs)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -510,6 +548,26 @@ class CursoViewSet(viewsets.ModelViewSet):
     serializer_class = CursoSerializer
     permission_classes = [IsUTPOrReadOnly]
     
+    def perform_update(self, serializer):
+        print(f"[CURSO perform_update] Datos recibidos: {self.request.data}")
+        asignaturas_ids = self.request.data.get('asignaturas', [])
+        print(f"[CURSO perform_update] Asignaturas IDs: {asignaturas_ids}")
+        
+        # Guardar el curso (sin las asignaturas)
+        curso = serializer.save()
+        
+        # Actualizar las asignaturas manualmente
+        if asignaturas_ids is not None:
+            from .models import Asignatura
+            print(f"[CURSO perform_update] Actualizando asignaturas del curso {curso.id}...")
+            curso.asignaturas.set(asignaturas_ids)
+            print(f"[CURSO perform_update] Asignaturas actualizadas: {list(curso.asignaturas.values_list('id', flat=True))}")
+    
+    def update(self, request, *args, **kwargs):
+        print(f"[CURSO UPDATE] Datos recibidos en update: {request.data}")
+        print(f"[CURSO UPDATE] Asignaturas en update: {request.data.get('asignaturas', [])}")
+        return super().update(request, *args, **kwargs)
+    
     def get_queryset(self):
         queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas', 'asignaturas_asignadas__docente__usuario', 'asignaturas_asignadas__asignatura').all()
         
@@ -537,24 +595,37 @@ class CursoViewSet(viewsets.ModelViewSet):
         Espera: { "asignatura_id": int, "docente_id": int o null }
         """
         from .models import CursoAsignatura
+        
+        logger.error(f"[ASIGNAR_DOCENTE] Datos recibidos: {request.data}")
+        logger.error(f"[ASIGNAR_DOCENTE] Curso ID: {pk}")
+        
         curso = self.get_object()
         asignatura_id = request.data.get('asignatura_id')
         docente_id = request.data.get('docente_id')
         
+        logger.error(f"[ASIGNAR_DOCENTE] asignatura_id: {asignatura_id}, docente_id: {docente_id}")
+        
         if not asignatura_id:
+            logger.error("[ASIGNAR_DOCENTE] Error: asignatura_id es requerido")
             return Response({"error": "asignatura_id es requerido"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             curso_asignatura = CursoAsignatura.objects.get(curso=curso, asignatura_id=asignatura_id)
+            logger.error(f"[ASIGNAR_DOCENTE] CursoAsignatura encontrado: {curso_asignatura.id}")
+            
             if docente_id:
                 curso_asignatura.docente_id = docente_id
             else:
                 curso_asignatura.docente = None
             curso_asignatura.save()
+            
+            logger.error(f"[ASIGNAR_DOCENTE] Docente asignado exitosamente")
             return Response(CursoAsignaturaSerializer(curso_asignatura).data)
         except CursoAsignatura.DoesNotExist:
+            logger.error(f"[ASIGNAR_DOCENTE] Error: La asignatura {asignatura_id} no está asociada al curso {curso.id}")
             return Response({"error": "La asignatura no está asociada al curso"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            logger.error(f"[ASIGNAR_DOCENTE] Error inesperado: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ObjetivoAprendizajeViewSet(viewsets.ModelViewSet):

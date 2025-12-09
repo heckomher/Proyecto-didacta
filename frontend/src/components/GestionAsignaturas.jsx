@@ -35,9 +35,10 @@ const GestionAsignaturas = () => {
         axios.get('/niveles-educativos/', getAuthHeaders())
       ]);
       
-      console.log('Asignaturas cargadas:', asignaturasRes.data.length);
-      console.log('Docentes cargados:', docentesRes.data.length);
+      console.log('Asignaturas cargadas:', asignaturasRes.data);
+      console.log('Docentes cargados:', docentesRes.data);
       console.log('Cursos cargados:', cursosRes.data.length);
+      console.log('Niveles educativos:', nivelesRes.data);
       
       setAsignaturas(asignaturasRes.data);
       setDocentes(docentesRes.data);
@@ -101,7 +102,11 @@ const GestionAsignaturas = () => {
   };
 
   const asignaturasFilteradas = filtroNivel 
-    ? asignaturas.filter(a => a.nivel_educativo === parseInt(filtroNivel))
+    ? asignaturas.filter(a => {
+        // Filtrar por nombre del nivel educativo
+        const nivelSeleccionado = nivelesEducativos.find(n => n.id === parseInt(filtroNivel));
+        return nivelSeleccionado && a.nivel_educativo_nombre === nivelSeleccionado.nombre;
+      })
     : asignaturas;
 
   console.log('Estado actual:', {
@@ -134,13 +139,21 @@ const GestionAsignaturas = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Gestión de Asignaturas y Docentes
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Asigna docentes a las asignaturas en cada curso
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Gestión de Asignaturas y Docentes
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Asigna docentes a las asignaturas en cada curso
+          </p>
+        </div>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+        >
+          ← Volver al Dashboard
+        </button>
       </div>
 
       {/* Filtro por nivel */}
@@ -265,11 +278,15 @@ const GestionAsignaturas = () => {
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                       >
                         <option value="">Sin asignar</option>
-                        {docentes.map((docente) => (
-                          <option key={docente.id} value={docente.id}>
-                            {docente.usuario_nombre} - {docente.especialidad}
-                          </option>
-                        ))}
+                        {docentes && docentes.length > 0 ? (
+                          docentes.map((docente) => (
+                            <option key={docente.id} value={docente.id}>
+                              {docente.usuario_nombre || docente.usuario?.nombre || 'Docente'} - {docente.especialidad}
+                            </option>
+                          ))
+                        ) : (
+                          <option disabled>No hay docentes disponibles</option>
+                        )}
                       </select>
                       {ca.docente_nombre && (
                         <p className="mt-1 text-sm text-green-600 dark:text-green-400">
