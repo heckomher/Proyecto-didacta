@@ -218,13 +218,27 @@ class NivelEducativoSerializer(serializers.ModelSerializer):
 
 class AsignaturaSerializer(serializers.ModelSerializer):
     cursos_count = serializers.SerializerMethodField()
+    nivel_educativo_nombre = serializers.SerializerMethodField()
     
     class Meta:
         model = Asignatura
-        fields = ['id', 'nombre_asignatura', 'descripcion', 'cursos_count']
+        fields = ['id', 'nombre_asignatura', 'descripcion', 'nivel_educativo_nombre', 'cursos_count']
     
     def get_cursos_count(self, obj):
         return obj.cursos.count()
+    
+    def get_nivel_educativo_nombre(self, obj):
+        # Extraer el nivel del nombre de la asignatura
+        # Formato esperado: "Nombre - Nivel" o simplemente retornar un valor por defecto
+        if 'Parvularia' in obj.nombre_asignatura:
+            return 'Educación Parvularia'
+        elif 'Básica' in obj.descripcion or 'Básico' in obj.descripcion:
+            return 'Educación Básica'
+        elif 'Media' in obj.descripcion:
+            return 'Educación Media'
+        elif 'Adultos' in obj.descripcion:
+            return 'Educación de Adultos'
+        return 'Sin clasificar'
 
 class CursoAsignaturaSerializer(serializers.ModelSerializer):
     curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)

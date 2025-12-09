@@ -35,6 +35,10 @@ const GestionAsignaturas = () => {
         axios.get('/niveles-educativos/', getAuthHeaders())
       ]);
       
+      console.log('Asignaturas cargadas:', asignaturasRes.data.length);
+      console.log('Docentes cargados:', docentesRes.data.length);
+      console.log('Cursos cargados:', cursosRes.data.length);
+      
       setAsignaturas(asignaturasRes.data);
       setDocentes(docentesRes.data);
       setCursos(cursosRes.data.filter(c => !c.archivado));
@@ -100,6 +104,14 @@ const GestionAsignaturas = () => {
     ? asignaturas.filter(a => a.nivel_educativo === parseInt(filtroNivel))
     : asignaturas;
 
+  console.log('Estado actual:', {
+    totalAsignaturas: asignaturas.length,
+    filtradas: asignaturasFilteradas.length,
+    filtroNivel,
+    loading,
+    isUTP
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -133,9 +145,14 @@ const GestionAsignaturas = () => {
 
       {/* Filtro por nivel */}
       <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-          Filtrar por Nivel Educativo
-        </label>
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Filtrar por Nivel Educativo
+          </label>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {asignaturasFilteradas.length} de {asignaturas.length} asignaturas
+          </span>
+        </div>
         <select
           value={filtroNivel}
           onChange={(e) => setFiltroNivel(e.target.value)}
@@ -176,7 +193,7 @@ const GestionAsignaturas = () => {
               return (
                 <tr key={asignatura.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {asignatura.nombre}
+                    {asignatura.nombre_asignatura}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {asignatura.nivel_educativo_nombre}
@@ -220,7 +237,7 @@ const GestionAsignaturas = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Asignar Docentes - {asignaturaSeleccionada.nombre}
+                  Asignar Docentes - {asignaturaSeleccionada.nombre_asignatura}
                 </h3>
                 <button
                   onClick={() => {
