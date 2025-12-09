@@ -14,8 +14,8 @@ const CalendarView = () => {
 
   const fetchAnioActivo = useCallback(async () => {
     try {
-      const response = await axios.get('/api/anios-academicos/activo/');
-      setAnioActivo(response.data);
+      const response = await axios.get('/anios-academicos/activo/');
+      setAnioAcademico(response.data);
     } catch (error) {
       console.error('Error fetching año activo', error);
     }
@@ -24,7 +24,7 @@ const CalendarView = () => {
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/eventos/', {
+      const response = await axios.get('/eventos/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const eventData = response.data.map(e => ({

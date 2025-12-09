@@ -53,6 +53,14 @@ class PlanificacionListCreateView(generics.ListCreateAPIView):
         if self.request.user.role == 'UTP':
             return queryset
         return queryset.filter(autor=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        print(f"DEBUG - Request data: {request.data}")
+        print(f"DEBUG - User: {request.user}, Role: {request.user.role}")
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print(f"DEBUG - Serializer errors: {serializer.errors}")
+        return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         # Si no se proporciona año académico, asignar el activo

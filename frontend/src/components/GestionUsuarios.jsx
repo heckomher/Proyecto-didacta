@@ -31,7 +31,7 @@ const GestionUsuarios = () => {
   const cargarUsuarios = async () => {
     try {
       // Nota: Este endpoint necesitará ser creado en el backend
-      const response = await axios.get('http://localhost/api/auth/users/', getAuthHeaders());
+      const response = await axios.get('/auth/users/', getAuthHeaders());
       setUsuarios(response.data);
     } catch (error) {
       console.error('Error cargando usuarios:', error);
@@ -49,7 +49,7 @@ const GestionUsuarios = () => {
     }
 
     try {
-      await axios.post('http://localhost/api/auth/register/', formData, getAuthHeaders());
+      await axios.post('/auth/register/', formData, getAuthHeaders());
       alert('Usuario creado exitosamente');
       setShowForm(false);
       setFormData({

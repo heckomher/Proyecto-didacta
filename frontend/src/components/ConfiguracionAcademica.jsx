@@ -64,12 +64,12 @@ const ConfiguracionAcademica = () => {
     try {
       const config = getAuthHeaders();
 
-      const [aniosRes, activoRes] = await Promise.all([
-        axios.get('/api/anios-academicos/', config),
-        axios.get('/api/anios-academicos/activo/', config).catch(() => ({ data: null }))
+      const [aniosRes, anioActivoRes] = await Promise.all([
+        axios.get('/anios-academicos/', config),
+        axios.get('/anios-academicos/activo/', config).catch(() => ({ data: null }))
       ]);
       setAniosAcademicos(aniosRes.data);
-      setAnioActivo(activoRes.data);
+      setAnioActivo(anioActivoRes.data);
     } catch (error) {
       console.error('Error cargando datos:', error);
       if (error.response?.status === 404) {
@@ -83,7 +83,7 @@ const ConfiguracionAcademica = () => {
   const crearAnioAcademico = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/anios-academicos/', {
+      await axios.post('/anios-academicos/', {
         ...nuevoAnio,
         estado: 'BORRADOR'
       }, getAuthHeaders());
@@ -105,7 +105,7 @@ const ConfiguracionAcademica = () => {
   const crearPeriodo = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/periodos-academicos/', nuevoPeriodo, getAuthHeaders());
+      await axios.post('/periodos-academicos/', nuevoPeriodo, getAuthHeaders());
       setShowPeriodoForm(false);
       setNuevoPeriodo({
         nombre: '',
@@ -124,7 +124,7 @@ const ConfiguracionAcademica = () => {
   const crearFeriado = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/feriados/', nuevoFeriado, getAuthHeaders());
+      await axios.post('/feriados/', nuevoFeriado, getAuthHeaders());
       setShowFeriadoForm(false);
       setNuevoFeriado({
         nombre: '',
@@ -142,7 +142,7 @@ const ConfiguracionAcademica = () => {
   const crearVacacion = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/vacaciones/', nuevaVacacion, getAuthHeaders());
+      await axios.post('/vacaciones/', nuevaVacacion, getAuthHeaders());
       setShowVacacionForm(false);
       setNuevaVacacion({
         nombre: '',
@@ -167,7 +167,7 @@ const ConfiguracionAcademica = () => {
         feriado: 'feriados',
         vacacion: 'vacaciones'
       };
-      await axios.delete(`/api/${endpoints[tipo]}/${id}/`, getAuthHeaders());
+      await axios.delete(`/${endpoints[tipo]}/${id}/`, getAuthHeaders());
       cargarDatos();
     } catch (error) {
       console.error('Error eliminando:', error);
@@ -181,7 +181,7 @@ const ConfiguracionAcademica = () => {
       return;
     }
     try {
-      await axios.post(`/api/anios-academicos/${id}/activar/`, {}, getAuthHeaders());
+      await axios.post(`/anios-academicos/${id}/activar/`, {}, getAuthHeaders());
       cargarDatos();
       alert('Año académico activado exitosamente.');
     } catch (error) {
@@ -206,11 +206,11 @@ const ConfiguracionAcademica = () => {
 
     try {
       // Verificar contraseña del usuario actual
-      const { data: user } = await axios.get('/api/auth/user/');
+      const { data: user } = await axios.get('/auth/user/');
 
       // Intentar login para validar la contraseña
       try {
-        await axios.post('/api/auth/login/', {
+        await axios.post('/auth/login/', {
           username: user.username,
           password: passwordCierre
         });
@@ -220,7 +220,9 @@ const ConfiguracionAcademica = () => {
       }
 
       // Si la contraseña es correcta, cerrar el año
-      await axios.post(`/api/anios-academicos/${anioACerrar}/cerrar/`);
+      await axios.post(`/anios-academicos/${anioACerrar}/cerrar/`, {
+        password: passwordCierre
+      });
       setShowConfirmarCierre(false);
       setPasswordCierre('');
       setAnioACerrar(null);

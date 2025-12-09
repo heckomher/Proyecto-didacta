@@ -32,10 +32,10 @@ const GestionCursos = () => {
   const cargarDatos = async () => {
     try {
       const [cursosRes, nivelesRes, asignaturasRes, aniosRes] = await Promise.all([
-        axios.get('http://localhost/api/cursos/', getAuthHeaders()),
-        axios.get('http://localhost/api/niveles-educativos/', getAuthHeaders()),
-        axios.get('http://localhost/api/asignaturas/', getAuthHeaders()),
-        axios.get('http://localhost/api/anios-academicos/', getAuthHeaders())
+        axios.get('/cursos/', getAuthHeaders()),
+        axios.get('/niveles-educativos/', getAuthHeaders()),
+        axios.get('/asignaturas/', getAuthHeaders()),
+        axios.get('/anios-academicos/', getAuthHeaders())
       ]);
       
       // Solo mostrar cursos NO archivados (años activos o en borrador)
@@ -56,7 +56,7 @@ const GestionCursos = () => {
     e.preventDefault();
     
     try {
-      await axios.post('http://localhost/api/cursos/', formData, getAuthHeaders());
+      await axios.post('/cursos/', formData, getAuthHeaders());
       alert('Curso creado exitosamente');
       setShowForm(false);
       setFormData({
@@ -77,7 +77,7 @@ const GestionCursos = () => {
     if (!confirm('¿Está seguro de eliminar este curso?')) return;
     
     try {
-      await axios.delete(`http://localhost/api/cursos/${id}/`, getAuthHeaders());
+      await axios.delete(`/cursos/${id}/`, getAuthHeaders());
       alert('Curso eliminado');
       cargarDatos();
     } catch (error) {

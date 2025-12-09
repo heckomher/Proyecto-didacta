@@ -11,7 +11,7 @@ const DashboardDocente = () => {
 
   const fetchPlanificaciones = useCallback(async () => {
     try {
-      const response = await axios.get('/api/planificaciones/', {
+      const response = await axios.get('/planificaciones/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPlanificaciones(response.data);
@@ -26,7 +26,7 @@ const DashboardDocente = () => {
 
   const handleEnviarValidacion = async (id) => {
     try {
-      await axios.post(`/api/planificaciones/${id}/enviar/`, {}, {
+      await axios.post(`/planificaciones/${id}/enviar/`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchPlanificaciones();

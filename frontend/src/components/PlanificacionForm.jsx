@@ -6,7 +6,7 @@ const PlanificacionForm = ({ planificacion, onSave, onCancel }) => {
   const { token } = useAuth();
   const [formData, setFormData] = useState({
     titulo: '',
-    tipo: 'CURSO',
+    tipo: 'ANUAL',
     fecha_inicio: '',
     fecha_fin: '',
     objetivos: [],
@@ -54,11 +54,11 @@ const PlanificacionForm = ({ planificacion, onSave, onCancel }) => {
       
       let response;
       if (planificacion) {
-        response = await axios.put(`/api/planificaciones/${planificacion.id}/`, data, {
+        response = await axios.put(`/planificaciones/${planificacion.id}/`, data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        response = await axios.post('/api/planificaciones/', data, {
+        response = await axios.post('/planificaciones/', data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -75,7 +75,7 @@ const PlanificacionForm = ({ planificacion, onSave, onCancel }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post(`/api/planificaciones/${response.data.id}/detalle/`, detalleData, {
+        await axios.post(`/planificaciones/${response.data.id}/detalle/`, detalleData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }

@@ -17,7 +17,7 @@ const DashboardUTP = () => {
 
   const verificarAnioAcademico = async () => {
     try {
-      const response = await axios.get('/api/verificar-anio-academico/');
+      const response = await axios.get('/verificar-anio-academico/');
       setTieneAnioActivo(response.data.tiene_anio_activo);
       if (!response.data.tiene_anio_activo) {
         // Redirigir a configuración académica si no hay año activo
@@ -36,7 +36,7 @@ const DashboardUTP = () => {
     if (!tieneAnioActivo) return;
 
     try {
-      const response = await axios.get('/api/planificaciones/', {
+      const response = await axios.get('/planificaciones/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPlanificaciones(response.data);

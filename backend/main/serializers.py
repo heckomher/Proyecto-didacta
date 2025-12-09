@@ -54,7 +54,9 @@ class LoginSerializer(serializers.Serializer):
 
 class PlanificacionSerializer(serializers.ModelSerializer):
     autor = serializers.StringRelatedField(read_only=True)
+    anio_academico = serializers.PrimaryKeyRelatedField(queryset=AnioAcademico.objects.all(), required=False, allow_null=True)
     anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    docente = serializers.PrimaryKeyRelatedField(queryset=Docente.objects.all(), required=False, allow_null=True)
     docente_nombre = serializers.SerializerMethodField()
     curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)
     asignatura_nombre = serializers.CharField(source='asignatura.nombre_asignatura', read_only=True)
@@ -79,16 +81,6 @@ class PlanificacionSerializer(serializers.ModelSerializer):
     def get_recursos_count(self, obj):
         return obj.recursos_pedagogicos.count()
     
-    def validate_anio_academico(self, value):
-        """Validar que el año académico existe y no está cerrado"""
-        if not value:
-            raise serializers.ValidationError("El año académico es obligatorio")
-        
-        if value.is_cerrado:
-            raise serializers.ValidationError("No se pueden crear planificaciones en un año académico cerrado")
-        
-        return value
-    
     def validate(self, data):
         """Validaciones adicionales a nivel de objeto"""
         # Si no hay año académico en los datos, verificar que hay uno activo
@@ -100,6 +92,12 @@ class PlanificacionSerializer(serializers.ModelSerializer):
                     "No hay año académico activo. Debe configurar un año académico antes de crear planificaciones."
                 )
             data['anio_academico'] = anio_activo
+        else:
+            # Validar que el año académico no está cerrado
+            if data['anio_academico'].estado == 'CERRADO':
+                raise serializers.ValidationError(
+                    "No se pueden crear planificaciones en un año académico cerrado"
+                )
         
         return data
 

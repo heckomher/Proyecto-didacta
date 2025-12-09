@@ -22,7 +22,7 @@ const HistorialCursos = () => {
 
   const cargarAniosCerrados = async () => {
     try {
-      const response = await axios.get('http://localhost/api/anios-academicos/', getAuthHeaders());
+      const response = await axios.get('/anios-academicos/', getAuthHeaders());
       const cerrados = response.data.filter(a => a.estado === 'CERRADO');
       setAniosCerrados(cerrados);
       
@@ -42,7 +42,7 @@ const HistorialCursos = () => {
   const cargarCursosArchivados = async (anioId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost/api/cursos/?anio_academico=${anioId}`, getAuthHeaders());
+      const response = await axios.get(`/cursos/?anio_academico=${anioId}`, getAuthHeaders());
       setCursosArchivados(response.data.filter(c => c.archivado));
     } catch (error) {
       console.error('Error cargando cursos archivados:', error);
