@@ -459,14 +459,59 @@ class AsignaturaViewSet(viewsets.ModelViewSet):
     queryset = Asignatura.objects.all()
     serializer_class = AsignaturaSerializer
     permission_classes = [IsUTPOrReadOnly]
+    
+    @action(detail=False, methods=['get'], url_path='sugeridas-por-nivel/(?P<nivel_nombre>[^/.]+)')
+    def sugeridas_por_nivel(self, request, nivel_nombre=None):
+        """
+        Retorna asignaturas sugeridas según el nivel educativo del currículum chileno.
+        """
+        # Mapeo de niveles a categorías de asignaturas
+        nivel_mapping = {
+            'Educación Parvularia': ['Educación Parvularia'],
+            'Educación Básica': ['Educación Básica'],
+            '1° Básico': ['Educación Básica'],
+            '2° Básico': ['Educación Básica'],
+            '3° Básico': ['Educación Básica'],
+            '4° Básico': ['Educación Básica'],
+            '5° Básico': ['Educación Básica'],
+            '6° Básico': ['Educación Básica'],
+            '7° Básico': ['Educación Básica'],
+            '8° Básico': ['Educación Básica'],
+            'Educación Media': ['Educación Media', 'Educación Básica'],
+            '1° Medio': ['Educación Media', 'Educación Básica'],
+            '2° Medio': ['Educación Media', 'Educación Básica'],
+            '3° Medio': ['Educación Media', 'Educación Básica'],
+            '4° Medio': ['Educación Media', 'Educación Básica'],
+            'Educación de Adultos': ['Educación de Adultos'],
+        }
+        
+        # Buscar qué categorías aplican
+        categorias = []
+        for key, values in nivel_mapping.items():
+            if nivel_nombre and key.lower() in nivel_nombre.lower():
+                categorias = values
+                break
+        
+        if not categorias:
+            # Por defecto, mostrar todas las asignaturas
+            asignaturas = Asignatura.objects.all()
+        else:
+            # Filtrar asignaturas por descripción que contenga el nivel
+            query = Asignatura.objects.none()
+            for categoria in categorias:
+                query = query | Asignatura.objects.filter(descripcion__icontains=categoria)
+            asignaturas = query.distinct()
+        
+        serializer = self.get_serializer(asignaturas, many=True)
+        return Response(serializer.data)
 
 class CursoViewSet(viewsets.ModelViewSet):
-    queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas').all()
+    queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas', 'asignaturas_asignadas__docente__usuario', 'asignaturas_asignadas__asignatura').all()
     serializer_class = CursoSerializer
     permission_classes = [IsUTPOrReadOnly]
     
     def get_queryset(self):
-        queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas').all()
+        queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas', 'asignaturas_asignadas__docente__usuario', 'asignaturas_asignadas__asignatura').all()
         
         # Filtrar por nivel educativo
         nivel_id = self.request.query_params.get('nivel', None)
@@ -484,6 +529,33 @@ class CursoViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(archivado=(archivado.lower() == 'true'))
         
         return queryset
+    
+    @action(detail=True, methods=['post'], url_path='asignar-docente')
+    def asignar_docente(self, request, pk=None):
+        """
+        Asigna un docente a una asignatura específica del curso.
+        Espera: { "asignatura_id": int, "docente_id": int o null }
+        """
+        from .models import CursoAsignatura
+        curso = self.get_object()
+        asignatura_id = request.data.get('asignatura_id')
+        docente_id = request.data.get('docente_id')
+        
+        if not asignatura_id:
+            return Response({"error": "asignatura_id es requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            curso_asignatura = CursoAsignatura.objects.get(curso=curso, asignatura_id=asignatura_id)
+            if docente_id:
+                curso_asignatura.docente_id = docente_id
+            else:
+                curso_asignatura.docente = None
+            curso_asignatura.save()
+            return Response(CursoAsignaturaSerializer(curso_asignatura).data)
+        except CursoAsignatura.DoesNotExist:
+            return Response({"error": "La asignatura no está asociada al curso"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ObjetivoAprendizajeViewSet(viewsets.ModelViewSet):
     queryset = ObjetivoAprendizaje.objects.select_related('nivel_educativo', 'curso').all()

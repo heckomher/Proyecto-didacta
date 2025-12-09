@@ -180,14 +180,24 @@ class RolSerializer(serializers.ModelSerializer):
 
 class DocenteSerializer(serializers.ModelSerializer):
     usuario_info = UserSerializer(source='usuario', read_only=True)
+    usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
     planificaciones_count = serializers.SerializerMethodField()
+    asignaturas_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Docente
-        fields = ['id', 'usuario', 'usuario_info', 'rut', 'especialidad', 'planificaciones_count']
+        fields = ['id', 'usuario', 'usuario_info', 'usuario_nombre', 'rut', 'especialidad', 'planificaciones_count', 'asignaturas_count']
     
     def get_planificaciones_count(self, obj):
-        return obj.planificaciones.count()
+        # Count planificaciones through curso_asignatura relationship
+        from django.db.models import Count
+        return Planificacion.objects.filter(
+            curso_asignatura__docente=obj
+        ).count()
+    
+    def get_asignaturas_count(self, obj):
+        # Count assigned asignaturas
+        return obj.asignaturas_asignadas.count()
 
 class EquipoDirectivoSerializer(serializers.ModelSerializer):
     usuario_info = UserSerializer(source='usuario', read_only=True)
@@ -219,26 +229,35 @@ class AsignaturaSerializer(serializers.ModelSerializer):
 class CursoAsignaturaSerializer(serializers.ModelSerializer):
     curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)
     asignatura_nombre = serializers.CharField(source='asignatura.nombre_asignatura', read_only=True)
+    docente_info = DocenteSerializer(source='docente', read_only=True)
+    docente_nombre = serializers.SerializerMethodField()
     
     class Meta:
         model = CursoAsignatura
-        fields = ['id', 'curso', 'curso_nombre', 'asignatura', 'asignatura_nombre']
+        fields = ['id', 'curso', 'curso_nombre', 'asignatura', 'asignatura_nombre', 
+                 'docente', 'docente_info', 'docente_nombre']
+    
+    def get_docente_nombre(self, obj):
+        if obj.docente:
+            return f"{obj.docente.usuario.nombre} {obj.docente.usuario.apellido}".strip() or obj.docente.usuario.username
+        return None
 
 class CursoSerializer(serializers.ModelSerializer):
     nivel_nombre = serializers.CharField(source='nivel.nombre', read_only=True)
     docente_jefe_info = DocenteSerializer(source='docente_jefe', read_only=True)
     asignaturas_info = AsignaturaSerializer(source='asignaturas', many=True, read_only=True)
+    asignaturas_asignadas = CursoAsignaturaSerializer(many=True, read_only=True)
     planificaciones_count = serializers.SerializerMethodField()
     anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
     
     class Meta:
         model = Curso
         fields = ['id', 'nombre_curso', 'nivel', 'nivel_nombre', 'docente_jefe', 'docente_jefe_info',
-                 'asignaturas', 'asignaturas_info', 'planificaciones_count', 'anio_academico', 
-                 'anio_academico_nombre', 'archivado', 'capacidad_maxima', 'paralelo']
+                 'asignaturas', 'asignaturas_info', 'asignaturas_asignadas', 'planificaciones_count', 
+                 'anio_academico', 'anio_academico_nombre', 'archivado', 'capacidad_maxima', 'paralelo']
     
     def get_planificaciones_count(self, obj):
-        return obj.planificaciones.count()
+        return obj.planificaciones_legacy.count() + sum(ca.planificaciones.count() for ca in obj.asignaturas_asignadas.all())
 
 class ObjetivoAprendizajeSerializer(serializers.ModelSerializer):
     nivel_educativo_nombre = serializers.CharField(source='nivel_educativo.nombre', read_only=True)

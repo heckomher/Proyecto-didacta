@@ -17,6 +17,24 @@ const Navbar = () => {
   // Determinar el título de la página basado en la ruta
   const getPageTitle = () => {
     switch (location.pathname) {
+      case '/gestionar-usuarios':
+        return 'Gestión de Usuarios';
+      case '/gestionar-cursos':
+        return 'Gestión de Cursos';
+      case '/gestionar-asignaturas':
+        return 'Gestión de Asignaturas';
+      case '/historial-cursos':
+        return 'Historial de Cursos';
+      case '/configuracion-academica':
+        return 'Configuración Académica';
+      case '/planificaciones':
+        return 'Mis Planificaciones';
+      case '/planificaciones/anuales':
+        return 'Planificaciones Anuales';
+      case '/planificaciones/unidades':
+        return 'Planificaciones por Unidad';
+      case '/planificaciones/semanales':
+        return 'Planificaciones Semanales';
       case '/':
         return user?.role === 'UTP' ? 'Panel de Validación UTP' : 'Mis Planificaciones';
       case '/calendar':

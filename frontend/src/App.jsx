@@ -8,6 +8,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import GestionUsuarios from './components/GestionUsuarios';
 import GestionCursos from './components/GestionCursos';
+import GestionAsignaturas from './components/GestionAsignaturas';
 import HistorialCursos from './components/HistorialCursos';
 import DashboardDocente from './components/DashboardDocente';
 import DashboardUTP from './components/DashboardUTP';
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/gestionar-usuarios" element={<ProtectedRoute><GestionUsuarios /></ProtectedRoute>} />
                 <Route path="/gestionar-cursos" element={<ProtectedRoute><GestionCursos /></ProtectedRoute>} />
+                <Route path="/gestionar-asignaturas" element={<ProtectedRoute><GestionAsignaturas /></ProtectedRoute>} />
                 <Route path="/historial-cursos" element={<ProtectedRoute><HistorialCursos /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
                 <Route path="/configuracion-academica" element={<ProtectedRoute><ConfiguracionAcademica /></ProtectedRoute>} />

@@ -170,13 +170,18 @@ class Curso(models.Model):
 
 class CursoAsignatura(models.Model):
     """Tabla intermedia entre Curso y Asignatura según diagrama ER"""
-    curso = models.ForeignKey('Curso', on_delete=models.CASCADE)
+    curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='asignaturas_asignadas')
     asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
+    docente = models.ForeignKey('Docente', on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaturas_asignadas')
     
     class Meta:
         unique_together = ['curso', 'asignatura']
         verbose_name = 'Curso-Asignatura'
         verbose_name_plural = 'Cursos-Asignaturas'
+    
+    def __str__(self):
+        docente_info = f" - {self.docente.usuario.get_full_name()}" if self.docente else " (sin docente)"
+        return f"{self.curso.nombre_curso}: {self.asignatura.nombre_asignatura}{docente_info}"
     
     def __str__(self):
         return f"{self.curso.nombre_curso} - {self.asignatura.nombre_asignatura}"
@@ -259,9 +264,14 @@ class Planificacion(models.Model):
     
     # Relaciones obligatorias según diagrama de clases
     anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='planificaciones')
-    docente = models.ForeignKey('Docente', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
-    curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
-    asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
+    # En lugar de relacionar con docente directamente, se relaciona con CursoAsignatura
+    # Esto permite que la planificación permanezca aunque cambie el docente
+    curso_asignatura = models.ForeignKey('CursoAsignatura', on_delete=models.CASCADE, related_name='planificaciones', null=True, blank=True)
+    
+    # Campos legacy - mantener por compatibilidad pero deprecados
+    docente = models.ForeignKey('Docente', on_delete=models.SET_NULL, related_name='planificaciones_legacy', null=True, blank=True)
+    curso = models.ForeignKey('Curso', on_delete=models.SET_NULL, related_name='planificaciones_legacy', null=True, blank=True)
+    asignatura = models.ForeignKey('Asignatura', on_delete=models.SET_NULL, related_name='planificaciones_legacy', null=True, blank=True)
     
     # Relaciones con objetivos y recursos
     objetivos_aprendizaje = models.ManyToManyField('ObjetivoAprendizaje', blank=True, related_name='planificaciones')
