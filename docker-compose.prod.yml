@@ -48,20 +48,8 @@ services:
     restart: always
     depends_on:
       - backend
-    expose:
-      - "80"
-
-  nginx:
-    image: nginx:alpine
-    container_name: didacta_nginx
-    restart: always
     ports:
       - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - backend
-      - frontend
 
 volumes:
   mysql_data_prod:
