@@ -10,3 +10,4 @@ dnspython
 gunicorn
 mysqlclient
 whitenoise
+cryptography
