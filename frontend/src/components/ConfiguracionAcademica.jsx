@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 const ConfiguracionAcademica = () => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [aniosAcademicos, setAniosAcademicos] = useState([]);
   const [anioActivo, setAnioActivo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -241,9 +243,20 @@ const ConfiguracionAcademica = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-primary-800 dark:text-primary-200">
-        Configuración Académica
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-primary-800 dark:text-primary-200">
+          Configuración Académica
+        </h1>
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors inline-flex items-center"
+        >
+          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Volver al Dashboard
+        </button>
+      </div>
 
       {/* Año Académico Activo */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
@@ -330,8 +343,11 @@ const ConfiguracionAcademica = () => {
                       {!anioActivo.cerrado && (
                         <button
                           onClick={() => eliminarItem('periodo', periodo.id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm"
+                          className="inline-flex items-center px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
                         >
+                          <svg className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                           Eliminar
                         </button>
                       )}
@@ -370,9 +386,12 @@ const ConfiguracionAcademica = () => {
                       {!anioActivo.cerrado && (
                         <button
                           onClick={() => eliminarItem('feriado', feriado.id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                          className="inline-flex items-center px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
                         >
-                          ×
+                          <svg className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Eliminar
                         </button>
                       )}
                     </div>
@@ -412,8 +431,11 @@ const ConfiguracionAcademica = () => {
                       {!anioActivo.cerrado && (
                         <button
                           onClick={() => eliminarItem('vacacion', vacacion.id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm"
+                          className="inline-flex items-center px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
                         >
+                          <svg className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                           Eliminar
                         </button>
                       )}
@@ -484,12 +506,15 @@ const ConfiguracionAcademica = () => {
                       {anio.periodos.map((periodo) => (
                         <div key={periodo.id} className="flex justify-between items-center text-sm">
                           <span className="text-gray-800 dark:text-gray-200">{periodo.nombre} ({periodo.fecha_inicio} - {periodo.fecha_fin})</span>
-                          <button
+                            <button
                             onClick={() => eliminarItem('periodo', periodo.id)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 text-xs"
-                          >
-                            Eliminar
-                          </button>
+                            className="inline-flex items-center px-2 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
+                            >
+                              <svg className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Eliminar
+                            </button>
                         </div>
                       ))}
                     </div>
@@ -550,12 +575,15 @@ const ConfiguracionAcademica = () => {
                       {anio.vacaciones.map((vacacion) => (
                         <div key={vacacion.id} className="flex justify-between items-center text-sm">
                           <span className="text-gray-800 dark:text-gray-200">{vacacion.nombre} ({vacacion.fecha_inicio} - {vacacion.fecha_fin})</span>
-                          <button
+                            <button
                             onClick={() => eliminarItem('vacacion', vacacion.id)}
-                            className="text-red-600 hover:text-red-800 text-xs"
-                          >
-                            Eliminar
-                          </button>
+                            className="inline-flex items-center px-2 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
+                            >
+                              <svg className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Eliminar
+                            </button>
                         </div>
                       ))}
                     </div>

@@ -6,6 +6,9 @@ import { AcademicProvider } from './contexts/AcademicContext';
 import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
 import Register from './components/Register';
+import GestionUsuarios from './components/GestionUsuarios';
+import GestionCursos from './components/GestionCursos';
+import HistorialCursos from './components/HistorialCursos';
 import DashboardDocente from './components/DashboardDocente';
 import DashboardUTP from './components/DashboardUTP';
 import CalendarView from './components/CalendarView';
@@ -56,6 +59,9 @@ function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/gestionar-usuarios" element={<ProtectedRoute><GestionUsuarios /></ProtectedRoute>} />
+                <Route path="/gestionar-cursos" element={<ProtectedRoute><GestionCursos /></ProtectedRoute>} />
+                <Route path="/historial-cursos" element={<ProtectedRoute><HistorialCursos /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
                 <Route path="/configuracion-academica" element={<ProtectedRoute><ConfiguracionAcademica /></ProtectedRoute>} />
                 

@@ -53,9 +53,20 @@ const DashboardDocente = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-serif">Dashboard Docente</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">Gestione sus planificaciones académicas</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white font-serif">Dashboard Docente</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Gestione sus planificaciones académicas</p>
+        </div>
+        <button
+          onClick={() => navigate('/historial-cursos')}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors inline-flex items-center"
+        >
+          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+          </svg>
+          Historial de Cursos
+        </button>
       </div>
 
       <div className="mb-6">

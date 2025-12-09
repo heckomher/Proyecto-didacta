@@ -192,6 +192,17 @@ def current_user(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def list_users(request):
+    """Lista todos los usuarios - solo para UTP y superuser"""
+    if not (request.user.role == 'UTP' or request.user.is_superuser):
+        return Response({"detail": "No tiene permisos para ver usuarios"}, status=status.HTTP_403_FORBIDDEN)
+    
+    users = User.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def verificar_anio_academico(request):
     """Verifica si hay un año académico activo configurado"""
     anio_activo = AnioAcademico.objects.filter(activo=True).first()
@@ -442,15 +453,28 @@ class AsignaturaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsUTPOrReadOnly]
 
 class CursoViewSet(viewsets.ModelViewSet):
-    queryset = Curso.objects.select_related('nivel', 'docente_jefe').prefetch_related('asignaturas').all()
+    queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas').all()
     serializer_class = CursoSerializer
     permission_classes = [IsUTPOrReadOnly]
     
     def get_queryset(self):
-        queryset = Curso.objects.select_related('nivel', 'docente_jefe').prefetch_related('asignaturas').all()
+        queryset = Curso.objects.select_related('nivel', 'docente_jefe', 'anio_academico').prefetch_related('asignaturas').all()
+        
+        # Filtrar por nivel educativo
         nivel_id = self.request.query_params.get('nivel', None)
         if nivel_id:
             queryset = queryset.filter(nivel_id=nivel_id)
+        
+        # Filtrar por año académico
+        anio_id = self.request.query_params.get('anio_academico', None)
+        if anio_id:
+            queryset = queryset.filter(anio_academico_id=anio_id)
+        
+        # Filtrar por estado archivado (por defecto muestra todos)
+        archivado = self.request.query_params.get('archivado', None)
+        if archivado is not None:
+            queryset = queryset.filter(archivado=(archivado.lower() == 'true'))
+        
         return queryset
 
 class ObjetivoAprendizajeViewSet(viewsets.ModelViewSet):

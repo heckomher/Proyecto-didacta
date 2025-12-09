@@ -231,11 +231,13 @@ class CursoSerializer(serializers.ModelSerializer):
     docente_jefe_info = DocenteSerializer(source='docente_jefe', read_only=True)
     asignaturas_info = AsignaturaSerializer(source='asignaturas', many=True, read_only=True)
     planificaciones_count = serializers.SerializerMethodField()
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
     
     class Meta:
         model = Curso
         fields = ['id', 'nombre_curso', 'nivel', 'nivel_nombre', 'docente_jefe', 'docente_jefe_info',
-                 'asignaturas', 'asignaturas_info', 'planificaciones_count']
+                 'asignaturas', 'asignaturas_info', 'planificaciones_count', 'anio_academico', 
+                 'anio_academico_nombre', 'archivado', 'capacidad_maxima', 'paralelo']
     
     def get_planificaciones_count(self, obj):
         return obj.planificaciones.count()

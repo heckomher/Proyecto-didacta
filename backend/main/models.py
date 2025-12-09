@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 import mongoengine
 from mongoengine import Document, StringField, DateTimeField, ReferenceField, ListField, DictField
 
@@ -141,14 +143,18 @@ class Curso(models.Model):
     nivel = models.ForeignKey('NivelEducativo', on_delete=models.CASCADE, related_name='cursos')
     docente_jefe = models.ForeignKey('Docente', on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos_a_cargo')
     asignaturas = models.ManyToManyField('Asignatura', through='CursoAsignatura', related_name='cursos')
+    anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='cursos', null=True)  # Temporal null=True para migración
+    archivado = models.BooleanField(default=False, editable=False)  # Se activa automáticamente cuando el año se cierra
+    capacidad_maxima = models.IntegerField(default=40)
+    paralelo = models.CharField(max_length=10, blank=True)
     
     class Meta:
         verbose_name = 'Curso'
         verbose_name_plural = 'Cursos'
-        ordering = ['nivel', 'nombre_curso']
+        ordering = ['-anio_academico__fecha_inicio', 'nivel', 'nombre_curso']
     
     def __str__(self):
-        return f"{self.nivel.nombre} - {self.nombre_curso}"
+        return f"{self.nivel.nombre} - {self.nombre_curso} ({self.anio_academico.nombre})"
     
     def agregar(self):
         """Agregar nuevo curso"""
@@ -533,5 +539,13 @@ class PeriodoVacaciones(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.fecha_inicio} - {self.fecha_fin})"
+
+
+# Señales para archivar cursos automáticamente cuando se cierra un año académico
+@receiver(post_save, sender=AnioAcademico)
+def archivar_cursos_al_cerrar_anio(sender, instance, **kwargs):
+    """Cuando un año académico se cierra, archiva todos sus cursos"""
+    if instance.estado == 'CERRADO':
+        Curso.objects.filter(anio_academico=instance, archivado=False).update(archivado=True)
 
 # Create your models here.
