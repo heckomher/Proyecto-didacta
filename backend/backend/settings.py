@@ -34,6 +34,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-hct-q8h-xhv&i856!a5j4
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
 
 
 # Application definition
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -90,19 +92,13 @@ AUTH_USER_MODEL = 'main.User'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'didacta_db'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'rootpassword'),
+        'HOST': os.environ.get('DB_HOST', 'db_mysql'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     },
-    # 'mongodb': {
-    #     'ENGINE': 'djongo',
-    #     'NAME': os.environ.get('MONGO_DATABASE', 'didacta_mongo'),
-    #     'CLIENT': {
-    #         'host': os.environ.get('MONGO_HOST', 'db_mongo'),
-    #         'port': int(os.environ.get('MONGO_PORT', '27017')),
-    #         'username': os.environ.get('MONGO_USER', 'root'),
-    #         'password': os.environ.get('MONGO_PASSWORD', 'rootpassword'),
-    #     }
-    # }
 }
 
 
@@ -141,6 +137,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

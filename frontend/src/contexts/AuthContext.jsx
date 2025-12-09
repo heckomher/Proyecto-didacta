@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-axios.defaults.baseURL = 'http://localhost:8000';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
 
 const AuthContext = createContext();
 
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          const userResponse = await axios.get('/api/auth/user/', {
+          const userResponse = await axios.get('/auth/user/', {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
           setUser(userResponse.data);
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
           const r = localStorage.getItem('refresh');
           if (r) {
             try {
-              const refreshResp = await axios.post('/api/auth/refresh/', { refresh: r });
+              const refreshResp = await axios.post('/auth/refresh/', { refresh: r });
               const newAccess = refreshResp.data.access;
               setToken(newAccess);
               localStorage.setItem('token', newAccess);
@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post('/api/auth/login/', { username, password });
+      const response = await axios.post('/auth/login/', { username, password });
       const { access, refresh } = response.data;
       setToken(access);
       setRefreshToken(refresh);
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('refresh', refresh);
       axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       // Fetch user info to get role
-      const userResponse = await axios.get('/api/auth/user/', {
+      const userResponse = await axios.get('/auth/user/', {
         headers: { Authorization: `Bearer ${access}` },
       });
       setUser(userResponse.data);
@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout/');
+      await axios.post('/auth/logout/');
     } catch (error) {
       console.error('Logout failed', error);
     }
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      await axios.post('/api/auth/register/', userData);
+      await axios.post('/auth/register/', userData);
       return true;
     } catch (error) {
       console.error('Register failed', error);

@@ -1,13 +1,20 @@
-FROM node:22
+# Stage 1: Build
+FROM node:22 AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-
 RUN npm install
 
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
+# Stage 2: Serve
+FROM nginx:alpine
 
-CMD ["node", "/app/node_modules/vite/bin/vite.js", "--host", "0.0.0.0"]
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

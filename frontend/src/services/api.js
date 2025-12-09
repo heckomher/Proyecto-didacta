@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 
 // Configuración base de axios
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '') + '/api';
 
 // Crear instancia de axios con configuración base
 const apiClient = axios.create({
@@ -116,7 +116,7 @@ export const authService = {
 // Servicios para configuración académica
 export const anioAcademicoService = {
   ...new BaseService('/anios-academicos/'),
-  
+
   async getActivo() {
     const response = await apiClient.get('/anios-academicos/activo/');
     return response.data;
@@ -157,7 +157,7 @@ export const recursoPedagogicoService = new BaseService('/recursos-pedagogicos/'
 // Servicios para planificaciones
 export const planificacionService = {
   ...new BaseService('/planificaciones/'),
-  
+
   async enviarAValidacion(id) {
     const response = await apiClient.post(`/planificaciones/${id}/enviar/`);
     return response.data;
