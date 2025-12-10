@@ -261,6 +261,70 @@ def list_users(request):
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user(request, pk):
+    """Actualiza un usuario - solo para UTP, EQUIPO_DIRECTIVO y superuser"""
+    if not (request.user.role in ['UTP', 'EQUIPO_DIRECTIVO'] or request.user.is_superuser):
+        return Response({"detail": "No tiene permisos para editar usuarios"}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # No permitir cambiar username
+    data = request.data.copy()
+    data.pop('username', None)
+    data.pop('password', None)  # No cambiar password desde aquí
+    
+    serializer = UserSerializer(user, data=data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_user_active(request, pk):
+    """Activa/desactiva un usuario"""
+    if not (request.user.role in ['UTP', 'EQUIPO_DIRECTIVO'] or request.user.is_superuser):
+        return Response({"detail": "No tiene permisos"}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # No permitir desactivarse a sí mismo
+    if user.id == request.user.id:
+        return Response({"detail": "No puede desactivarse a sí mismo"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    user.activo = not user.activo
+    user.save()
+    return Response({"activo": user.activo, "message": f"Usuario {'activado' if user.activo else 'desactivado'}"})
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_user(request, pk):
+    """Elimina un usuario"""
+    if not (request.user.role in ['UTP', 'EQUIPO_DIRECTIVO'] or request.user.is_superuser):
+        return Response({"detail": "No tiene permisos para eliminar usuarios"}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # No permitir eliminarse a sí mismo
+    if user.id == request.user.id:
+        return Response({"detail": "No puede eliminarse a sí mismo"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    username = user.username
+    user.delete()
+    return Response({"message": f"Usuario '{username}' eliminado correctamente"})
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def verificar_anio_academico(request):

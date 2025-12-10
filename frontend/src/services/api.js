@@ -117,6 +117,26 @@ export const authService = {
     const response = await apiClient.post('/auth/refresh/', { refresh: refreshToken });
     return response.data;
   },
+
+  async getUsers() {
+    const response = await apiClient.get('/auth/users/');
+    return response.data;
+  },
+
+  async updateUser(id, data) {
+    const response = await apiClient.put(`/auth/users/${id}/`, data);
+    return response.data;
+  },
+
+  async toggleUserActive(id) {
+    const response = await apiClient.patch(`/auth/users/${id}/toggle-active/`);
+    return response.data;
+  },
+
+  async deleteUser(id) {
+    const response = await apiClient.delete(`/auth/users/${id}/delete/`);
+    return response.data;
+  },
 };
 
 // Servicios para configuración académica

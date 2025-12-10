@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/api';
 
 const GestionUsuarios = () => {
   const navigate = useNavigate();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -17,12 +22,13 @@ const GestionUsuarios = () => {
     role: 'DOCENTE'
   });
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: { 'Authorization': `Bearer ${token}` }
-    };
-  };
+  const [editFormData, setEditFormData] = useState({
+    email: '',
+    nombre: '',
+    apellido: '',
+    role: '',
+    activo: true
+  });
 
   useEffect(() => {
     cargarUsuarios();
@@ -30,9 +36,8 @@ const GestionUsuarios = () => {
 
   const cargarUsuarios = async () => {
     try {
-      // Nota: Este endpoint necesitará ser creado en el backend
-      const response = await axios.get('/auth/users/', getAuthHeaders());
-      setUsuarios(response.data);
+      const data = await authService.getUsers();
+      setUsuarios(data);
     } catch (error) {
       console.error('Error cargando usuarios:', error);
     } finally {
@@ -42,13 +47,12 @@ const GestionUsuarios = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.password2) {
       alert('Las contraseñas no coinciden');
       return;
     }
 
-    // Validar contraseña
     if (formData.password.length < 8) {
       alert('⚠️ Contraseña débil: Debe tener al menos 8 caracteres');
       return;
@@ -59,13 +63,8 @@ const GestionUsuarios = () => {
       return;
     }
 
-    if (['12345678', '123456789', 'password', 'contraseña', 'qwerty'].includes(formData.password.toLowerCase())) {
-      alert('⚠️ Contraseña débil: Esta contraseña es muy común. Use una combinación de letras y números');
-      return;
-    }
-
     try {
-      await axios.post('/auth/register/', formData, getAuthHeaders());
+      await authService.register(formData);
       alert('Usuario creado exitosamente');
       setShowForm(false);
       setFormData({
@@ -80,8 +79,6 @@ const GestionUsuarios = () => {
       cargarUsuarios();
     } catch (error) {
       console.error('Error creando usuario:', error);
-      
-      // Mostrar errores de validación del backend de forma clara
       if (error.response?.data?.password) {
         const passwordErrors = error.response.data.password;
         if (Array.isArray(passwordErrors)) {
@@ -92,6 +89,61 @@ const GestionUsuarios = () => {
       } else {
         alert('Error al crear usuario: ' + (error.response?.data?.detail || error.message));
       }
+    }
+  };
+
+  const handleEditClick = (usuario) => {
+    setEditingUser(usuario);
+    setEditFormData({
+      email: usuario.email || '',
+      nombre: usuario.nombre || '',
+      apellido: usuario.apellido || '',
+      role: usuario.role || 'DOCENTE',
+      activo: usuario.activo
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await authService.updateUser(editingUser.id, editFormData);
+      alert('Usuario actualizado exitosamente');
+      setShowEditModal(false);
+      setEditingUser(null);
+      cargarUsuarios();
+    } catch (error) {
+      console.error('Error actualizando usuario:', error);
+      alert('Error al actualizar usuario: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const handleToggleActive = async (usuario) => {
+    try {
+      const result = await authService.toggleUserActive(usuario.id);
+      alert(result.message);
+      cargarUsuarios();
+    } catch (error) {
+      console.error('Error cambiando estado:', error);
+      alert('Error: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const handleDeleteClick = (usuario) => {
+    setUserToDelete(usuario);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const result = await authService.deleteUser(userToDelete.id);
+      alert(result.message);
+      setShowDeleteConfirm(false);
+      setUserToDelete(null);
+      cargarUsuarios();
+    } catch (error) {
+      console.error('Error eliminando usuario:', error);
+      alert('Error: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -148,11 +200,16 @@ const GestionUsuarios = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rol</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {usuarios.map((usuario) => (
-              <tr key={usuario.id}>
+              <tr
+                key={usuario.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                onClick={() => handleEditClick(usuario)}
+              >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {usuario.username}
                 </td>
@@ -172,13 +229,32 @@ const GestionUsuarios = () => {
                     {usuario.activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleToggleActive(usuario)}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${usuario.activo
+                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                          : 'bg-green-100 text-green-800 hover:bg-green-200'
+                        }`}
+                    >
+                      {usuario.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(usuario)}
+                      className="px-3 py-1 bg-red-100 text-red-800 hover:bg-red-200 rounded text-xs font-medium transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Modal Formulario */}
+      {/* Modal Crear Usuario */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -194,7 +270,7 @@ const GestionUsuarios = () => {
                   required
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre</label>
                 <input
@@ -280,8 +356,119 @@ const GestionUsuarios = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Editar Usuario */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Editar Usuario</h3>
+            <form onSubmit={handleEditSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre de Usuario</label>
+                <input
+                  type="text"
+                  value={editingUser.username}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 dark:text-gray-100 cursor-not-allowed"
+                  disabled
+                />
+                <p className="mt-1 text-xs text-gray-500">El nombre de usuario no se puede cambiar</p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre</label>
+                <input
+                  type="text"
+                  value={editFormData.nombre}
+                  onChange={(e) => setEditFormData({ ...editFormData, nombre: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Apellido</label>
+                <input
+                  type="text"
+                  value={editFormData.apellido}
+                  onChange={(e) => setEditFormData({ ...editFormData, apellido: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                >
+                  <option value="DOCENTE">Docente</option>
+                  <option value="UTP">UTP</option>
+                  <option value="EQUIPO_DIRECTIVO">Equipo Directivo</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2">
+                <button type="submit" className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                  Guardar Cambios
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingUser(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Eliminación */}
+      {showDeleteConfirm && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Confirmar Eliminación</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              ¿Está seguro que desea eliminar al usuario <strong>{userToDelete.username}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setUserToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default GestionUsuarios;
+
