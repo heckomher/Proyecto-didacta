@@ -6,8 +6,8 @@ import { useState } from 'react';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Crear instancia de axios con configuración base
-// apiClient usará el baseURL global de axios configurado en main.jsx
 const apiClient = axios.create({
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
