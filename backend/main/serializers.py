@@ -4,7 +4,8 @@ from django.contrib.auth.password_validation import validate_password
 from .models import (Planificacion, PlanificacionDetalle, Evento, Calendario, AnioAcademico, 
                     PeriodoAcademico, Feriado, PeriodoVacaciones, Rol, Docente, EquipoDirectivo,
                     NivelEducativo, Asignatura, Curso, CursoAsignatura, ObjetivoAprendizaje,
-                    RecursoPedagogico, PlanificacionAnual, PlanificacionUnidad, PlanificacionSemanal)
+                    RecursoPedagogico, PlanificacionAnual, PlanificacionUnidad, PlanificacionSemanal,
+                    BloqueHorario, Horario, GrupoMulticurso)
 
 User = get_user_model()
 
@@ -262,7 +263,7 @@ class CursoAsignaturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = CursoAsignatura
         fields = ['id', 'curso', 'curso_nombre', 'asignatura', 'asignatura_nombre', 
-                 'docente', 'docente_info', 'docente_nombre']
+                 'docente', 'docente_info', 'docente_nombre', 'horas_semanales']
     
     def get_docente_nombre(self, obj):
         if obj.docente:
@@ -402,3 +403,63 @@ class PlanificacionSemanalSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("La planificación de unidad es obligatoria.")
         return value
+
+
+# ==========================================
+# SERIALIZERS DE HORARIO (Para futura UI)
+# ==========================================
+
+class BloqueHorarioSerializer(serializers.ModelSerializer):
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    
+    class Meta:
+        model = BloqueHorario
+        fields = ['id', 'numero', 'hora_inicio', 'hora_fin', 'anio_academico', 'anio_academico_nombre']
+
+
+class HorarioSerializer(serializers.ModelSerializer):
+    curso_nombre = serializers.CharField(source='curso.nombre_curso', read_only=True)
+    asignatura_nombre = serializers.CharField(source='asignatura.nombre_asignatura', read_only=True)
+    docente_nombre = serializers.SerializerMethodField()
+    bloque_info = serializers.SerializerMethodField()
+    dia_semana_nombre = serializers.CharField(source='get_dia_semana_display', read_only=True)
+    
+    class Meta:
+        model = Horario
+        fields = ['id', 'curso', 'curso_nombre', 'dia_semana', 'dia_semana_nombre', 
+                  'bloque', 'bloque_info', 'asignatura', 'asignatura_nombre', 
+                  'docente', 'docente_nombre']
+    
+    def get_docente_nombre(self, obj):
+        if obj.docente:
+            return f"{obj.docente.usuario.nombre} {obj.docente.usuario.apellido}".strip()
+        return None
+    
+    def get_bloque_info(self, obj):
+        if obj.bloque:
+            return {
+                'numero': obj.bloque.numero,
+                'hora_inicio': obj.bloque.hora_inicio.strftime('%H:%M'),
+                'hora_fin': obj.bloque.hora_fin.strftime('%H:%M')
+            }
+        return None
+
+
+class GrupoMulticursoSerializer(serializers.ModelSerializer):
+    asignatura_nombre = serializers.CharField(source='asignatura.nombre_asignatura', read_only=True)
+    docente_nombre = serializers.SerializerMethodField()
+    cursos_info = serializers.SerializerMethodField()
+    anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
+    
+    class Meta:
+        model = GrupoMulticurso
+        fields = ['id', 'nombre', 'asignatura', 'asignatura_nombre', 'cursos', 
+                  'cursos_info', 'docente', 'docente_nombre', 'anio_academico', 'anio_academico_nombre']
+    
+    def get_docente_nombre(self, obj):
+        if obj.docente:
+            return f"{obj.docente.usuario.nombre} {obj.docente.usuario.apellido}".strip()
+        return None
+    
+    def get_cursos_info(self, obj):
+        return [{'id': c.id, 'nombre': c.nombre_curso} for c in obj.cursos.all()]

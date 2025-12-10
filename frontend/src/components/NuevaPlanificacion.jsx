@@ -583,8 +583,8 @@ const NuevaPlanificacion = () => {
                                 />
                             </div>
 
-                            {/* Curso y Asignatura - solo para anual y semanal, unidad lo hereda del padre */}
-                            {tipo !== 'unidad' && (
+                            {/* Curso y Asignatura - solo para anual, unidad y semanal lo heredan del padre */}
+                            {tipo === 'anual' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

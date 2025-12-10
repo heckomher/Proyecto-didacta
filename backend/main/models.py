@@ -178,6 +178,7 @@ class Asignatura(models.Model):
     descripcion = models.TextField(blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_ASIGNATURA_CHOICES, default='COMUN')
     plan_asociado = models.CharField(max_length=20, blank=True, default='', help_text='Plan al que pertenece (solo para electivos)')
+    es_multicurso = models.BooleanField(default=False, help_text='Permite combinar cursos (electivos, Ed.Física)')
     
     class Meta:
         verbose_name = 'Asignatura'
@@ -230,6 +231,7 @@ class CursoAsignatura(models.Model):
     curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='asignaturas_asignadas')
     asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
     docente = models.ForeignKey('Docente', on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaturas_asignadas')
+    horas_semanales = models.PositiveIntegerField(default=4, help_text='Horas pedagógicas semanales (definido por UTP)')
     
     class Meta:
         unique_together = ['curso', 'asignatura']
@@ -239,9 +241,6 @@ class CursoAsignatura(models.Model):
     def __str__(self):
         docente_info = f" - {self.docente.usuario.get_full_name()}" if self.docente else " (sin docente)"
         return f"{self.curso.nombre_curso}: {self.asignatura.nombre_asignatura}{docente_info}"
-    
-    def __str__(self):
-        return f"{self.curso.nombre_curso} - {self.asignatura.nombre_asignatura}"
 
 class ObjetivoAprendizaje(models.Model):
     """Objetivos de aprendizaje según diagrama de clases"""
@@ -651,4 +650,86 @@ def crear_perfil_usuario(sender, instance, created, **kwargs):
                     departamento="Sin departamento"
                 )
 
-# Create your models here.
+
+# ==========================================
+# MODELOS DE HORARIO (Para futura implementación)
+# ==========================================
+
+DIAS_SEMANA_CHOICES = [
+    (1, 'Lunes'),
+    (2, 'Martes'),
+    (3, 'Miércoles'),
+    (4, 'Jueves'),
+    (5, 'Viernes'),
+]
+
+
+class BloqueHorario(models.Model):
+    """Bloques de hora del día (ej: 1° bloque 8:00-8:45)"""
+    numero = models.PositiveIntegerField(help_text='Número de bloque (1-10)')
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='bloques_horario')
+    
+    class Meta:
+        unique_together = ['numero', 'anio_academico']
+        verbose_name = 'Bloque Horario'
+        verbose_name_plural = 'Bloques Horario'
+        ordering = ['numero']
+    
+    def __str__(self):
+        return f"Bloque {self.numero}: {self.hora_inicio.strftime('%H:%M')}-{self.hora_fin.strftime('%H:%M')}"
+
+
+class Horario(models.Model):
+    """Asignación de bloque horario a asignatura/docente en un curso"""
+    curso = models.ForeignKey('Curso', on_delete=models.CASCADE, related_name='horarios')
+    dia_semana = models.IntegerField(choices=DIAS_SEMANA_CHOICES)
+    bloque = models.ForeignKey('BloqueHorario', on_delete=models.CASCADE, related_name='horarios')
+    asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE, related_name='horarios')
+    docente = models.ForeignKey('Docente', on_delete=models.CASCADE, related_name='horarios')
+    
+    class Meta:
+        unique_together = ['curso', 'dia_semana', 'bloque']  # No puede haber 2 asignaturas en mismo bloque
+        verbose_name = 'Horario'
+        verbose_name_plural = 'Horarios'
+        ordering = ['dia_semana', 'bloque__numero']
+    
+    def __str__(self):
+        return f"{self.curso.nombre_curso} - {self.get_dia_semana_display()} Bloque {self.bloque.numero}: {self.asignatura.nombre_asignatura}"
+    
+    def clean(self):
+        """Validar conflicto de docente (excepto asignaturas multicurso)"""
+        from django.core.exceptions import ValidationError
+        if self.asignatura and not self.asignatura.es_multicurso:
+            conflicto = Horario.objects.filter(
+                docente=self.docente,
+                dia_semana=self.dia_semana,
+                bloque=self.bloque
+            ).exclude(pk=self.pk).first()
+            if conflicto:
+                raise ValidationError(
+                    f'El docente ya está asignado en {conflicto.curso.nombre_curso} '
+                    f'el {conflicto.get_dia_semana_display()} en el bloque {conflicto.bloque.numero}'
+                )
+
+
+class GrupoMulticurso(models.Model):
+    """Define qué cursos van juntos en una asignatura multicurso (electivos, Ed.Física combinada)"""
+    nombre = models.CharField(max_length=100, help_text='Ej: Electivo Biología III-IV, Ed.Física 1°-2° Básico')
+    asignatura = models.ForeignKey(
+        'Asignatura', 
+        on_delete=models.CASCADE, 
+        related_name='grupos_multicurso'
+        # Nota: Validar es_multicurso=True en formularios/admin
+    )
+    cursos = models.ManyToManyField('Curso', related_name='grupos_multicurso')
+    docente = models.ForeignKey('Docente', on_delete=models.SET_NULL, null=True, blank=True, related_name='grupos_multicurso')
+    anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='grupos_multicurso')
+    
+    class Meta:
+        verbose_name = 'Grupo Multicurso'
+        verbose_name_plural = 'Grupos Multicurso'
+    
+    def __str__(self):
+        return f"{self.nombre} ({self.anio_academico.nombre})"

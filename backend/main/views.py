@@ -18,12 +18,13 @@ from .serializers import (UserSerializer, LoginSerializer, PlanificacionSerializ
                          AsignaturaSerializer, CursoSerializer, CursoAsignaturaSerializer,
                          ObjetivoAprendizajeSerializer,
                          RecursoPedagogicoSerializer, PlanificacionAnualSerializer,
-                         PlanificacionUnidadSerializer, PlanificacionSemanalSerializer)
+                         PlanificacionUnidadSerializer, PlanificacionSemanalSerializer,
+                         BloqueHorarioSerializer, HorarioSerializer, GrupoMulticursoSerializer)
 from .models import (Planificacion, PlanificacionDetalle, Evento, Calendario,
                     AnioAcademico, PeriodoAcademico, Feriado, PeriodoVacaciones,
                     Rol, Docente, EquipoDirectivo, NivelEducativo, Asignatura, Curso,
                     ObjetivoAprendizaje, RecursoPedagogico, PlanificacionAnual,
-                    PlanificacionUnidad, PlanificacionSemanal)
+                    PlanificacionUnidad, PlanificacionSemanal, BloqueHorario, Horario, GrupoMulticurso)
 
 User = get_user_model()
 
@@ -779,6 +780,37 @@ class CursoViewSet(viewsets.ModelViewSet):
             logger.error(f"[ASIGNAR_DOCENTE] Error inesperado: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['patch'], url_path='actualizar-horas')
+    def actualizar_horas(self, request, pk=None):
+        """
+        Actualiza las horas semanales de una asignatura en el curso.
+        Espera: { "curso_asignatura_id": int, "horas_semanales": int }
+        """
+        from .models import CursoAsignatura
+        
+        curso = self.get_object()
+        curso_asignatura_id = request.data.get('curso_asignatura_id')
+        horas_semanales = request.data.get('horas_semanales')
+        
+        if not curso_asignatura_id or horas_semanales is None:
+            return Response({"error": "curso_asignatura_id y horas_semanales son requeridos"}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        if horas_semanales < 1 or horas_semanales > 12:
+            return Response({"error": "Las horas semanales deben estar entre 1 y 12"}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            curso_asignatura = CursoAsignatura.objects.get(id=curso_asignatura_id, curso=curso)
+            curso_asignatura.horas_semanales = horas_semanales
+            curso_asignatura.save()
+            return Response(CursoAsignaturaSerializer(curso_asignatura).data)
+        except CursoAsignatura.DoesNotExist:
+            return Response({"error": "La asignatura no está asociada al curso"}, 
+                          status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 class ObjetivoAprendizajeViewSet(viewsets.ModelViewSet):
     queryset = ObjetivoAprendizaje.objects.select_related('nivel_educativo', 'curso').all()
     serializer_class = ObjetivoAprendizajeSerializer
@@ -916,3 +948,67 @@ class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
         planificacion.save()
         return Response({'message': 'Planificación enviada a validación'})
 
+
+# ==========================================
+# VIEWSETS DE HORARIO (Para futura UI)
+# ==========================================
+
+class BloqueHorarioViewSet(viewsets.ModelViewSet):
+    """ViewSet para bloques horarios"""
+    queryset = BloqueHorario.objects.all()
+    serializer_class = BloqueHorarioSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        anio = self.request.query_params.get('anio_academico')
+        if anio:
+            queryset = queryset.filter(anio_academico_id=anio)
+        return queryset.order_by('numero')
+
+
+class HorarioViewSet(viewsets.ModelViewSet):
+    """ViewSet para horarios semanales"""
+    queryset = Horario.objects.all()
+    serializer_class = HorarioSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        curso = self.request.query_params.get('curso')
+        docente = self.request.query_params.get('docente')
+        if curso:
+            queryset = queryset.filter(curso_id=curso)
+        if docente:
+            queryset = queryset.filter(docente_id=docente)
+        return queryset.select_related('curso', 'asignatura', 'docente', 'bloque')
+    
+    @action(detail=False, methods=['get'], url_path='por-curso/(?P<curso_id>\\d+)')
+    def por_curso(self, request, curso_id=None):
+        """Obtener horario de un curso"""
+        horarios = self.get_queryset().filter(curso_id=curso_id)
+        serializer = self.get_serializer(horarios, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='por-docente')
+    def por_docente(self, request):
+        """Obtener horario del docente autenticado"""
+        if hasattr(request.user, 'perfil_docente'):
+            horarios = self.get_queryset().filter(docente=request.user.perfil_docente)
+            serializer = self.get_serializer(horarios, many=True)
+            return Response(serializer.data)
+        return Response([], status=200)
+
+
+class GrupoMulticursoViewSet(viewsets.ModelViewSet):
+    """ViewSet para grupos multicurso"""
+    queryset = GrupoMulticurso.objects.all()
+    serializer_class = GrupoMulticursoSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        anio = self.request.query_params.get('anio_academico')
+        if anio:
+            queryset = queryset.filter(anio_academico_id=anio)
+        return queryset.select_related('asignatura', 'docente', 'anio_academico').prefetch_related('cursos')

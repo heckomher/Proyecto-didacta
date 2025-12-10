@@ -188,6 +188,27 @@ const GestionCursos = () => {
     }
   };
 
+  const actualizarHorasSemanales = async (cursoAsignaturaId, horas) => {
+    if (horas < 1 || horas > 12) return;
+    try {
+      await apiClient.patch(
+        `/cursos/${cursoParaDocentes.id}/actualizar-horas/`,
+        { curso_asignatura_id: cursoAsignaturaId, horas_semanales: horas }
+      );
+      // Actualizar localmente para evitar llamada extra al servidor
+      setCursoParaDocentes(prev => ({
+        ...prev,
+        asignaturas_asignadas: prev.asignaturas_asignadas.map(asig =>
+          asig.id === cursoAsignaturaId ? { ...asig, horas_semanales: horas } : asig
+        )
+      }));
+      toast.success('Horas actualizadas');
+    } catch (error) {
+      console.error('Error actualizando horas:', error);
+      toast.error('Error al actualizar horas: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -601,9 +622,22 @@ const GestionCursos = () => {
                 {cursoParaDocentes.asignaturas_asignadas && cursoParaDocentes.asignaturas_asignadas.length > 0 ? (
                   cursoParaDocentes.asignaturas_asignadas.map((asig) => (
                     <div key={asig.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        {asig.asignatura_nombre}
-                      </label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {asig.asignatura_nombre}
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-500 dark:text-gray-400">Hrs/sem:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="12"
+                            value={asig.horas_semanales || 4}
+                            onChange={(e) => actualizarHorasSemanales(asig.id, parseInt(e.target.value))}
+                            className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-gray-100"
+                          />
+                        </div>
+                      </div>
                       <select
                         value={asig.docente || ''}
                         onChange={(e) => asignarDocente(asig.asignatura, e.target.value || null)}

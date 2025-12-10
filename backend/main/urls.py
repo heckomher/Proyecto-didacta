@@ -12,7 +12,8 @@ from .views import (RegisterView, LoginView, logout_view, check_username, Planif
                    RolViewSet, DocenteViewSet, EquipoDirectivoViewSet,
                    NivelEducativoViewSet, AsignaturaViewSet, CursoViewSet,
                    ObjetivoAprendizajeViewSet, RecursoPedagogicoViewSet,
-                   PlanificacionAnualViewSet, PlanificacionUnidadViewSet, PlanificacionSemanalViewSet)
+                   PlanificacionAnualViewSet, PlanificacionUnidadViewSet, PlanificacionSemanalViewSet,
+                   BloqueHorarioViewSet, HorarioViewSet, GrupoMulticursoViewSet)
 
 # Curriculum views (MongoDB)
 from .curriculum_views import (
@@ -42,6 +43,10 @@ router.register(r'recursos-pedagogicos', RecursoPedagogicoViewSet, basename='rec
 router.register(r'planificaciones-anuales', PlanificacionAnualViewSet, basename='planificacion-anual')
 router.register(r'planificaciones-unidad', PlanificacionUnidadViewSet, basename='planificacion-unidad')
 router.register(r'planificaciones-semanales', PlanificacionSemanalViewSet, basename='planificacion-semanal')
+# Horarios (Para futura UI)
+router.register(r'bloques-horario', BloqueHorarioViewSet, basename='bloque-horario')
+router.register(r'horarios', HorarioViewSet, basename='horario')
+router.register(r'grupos-multicurso', GrupoMulticursoViewSet, basename='grupo-multicurso')
 
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
