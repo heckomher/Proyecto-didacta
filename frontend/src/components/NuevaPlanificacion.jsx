@@ -11,6 +11,8 @@ const NuevaPlanificacion = () => {
 
     // Determinar tipo inicial desde URL params
     const tipoInicial = searchParams.get('tipo') || '';
+    const anualIdParam = searchParams.get('anual') || '';
+    const unidadIdParam = searchParams.get('unidad') || '';
 
     const [step, setStep] = useState(tipoInicial ? 2 : 1); // Si viene con tipo, saltar al step 2
     const [tipo, setTipo] = useState(tipoInicial);
@@ -19,6 +21,12 @@ const NuevaPlanificacion = () => {
     const [planificacionesAnuales, setPlanificacionesAnuales] = useState([]);
     const [planificacionesUnidad, setPlanificacionesUnidad] = useState([]);
     const [anioActivo, setAnioActivo] = useState(null);
+
+    // Estado para currículum
+    const [unidadesCurriculares, setUnidadesCurriculares] = useState([]);
+    const [unidadCurricularSeleccionada, setUnidadCurricularSeleccionada] = useState(null);
+    const [loadingCurriculum, setLoadingCurriculum] = useState(false);
+    const [codigosCurriculum, setCodigosCurriculum] = useState({ asignaturas: {}, niveles: {} });
 
     const [formData, setFormData] = useState({
         titulo: '',
@@ -31,26 +39,29 @@ const NuevaPlanificacion = () => {
         meses_academicos: 10,
         periodos_evaluacion: 2,
         numero_unidad: 1,
-        planificacion_anual: '',
+        planificacion_anual: anualIdParam,
         semanas_duracion: 4,
         numero_semana: 1,
-        planificacion_unidad: '',
-        horas_academicas: 45
+        planificacion_unidad: unidadIdParam,
+        horas_academicas: 45,
+        unidad_curricular_codigo: '' // Nuevo: vincular a unidad curricular MINEDUC
     });
 
     // Cargar datos iniciales
     useEffect(() => {
         const cargarDatos = async () => {
             try {
-                const [cursosRes, anualesRes, unidadesRes, aniosRes] = await Promise.all([
+                const [cursosRes, anualesRes, unidadesRes, aniosRes, codigosRes] = await Promise.all([
                     apiClient.get('/docentes/mis-cursos/'),
                     apiClient.get('/planificaciones-anuales/'),
                     apiClient.get('/planificaciones-unidad/'),
-                    apiClient.get('/anios-academicos/')
+                    apiClient.get('/anios-academicos/'),
+                    apiClient.get('/curriculum/codigos/')
                 ]);
                 setMisCursos(cursosRes.data);
                 setPlanificacionesAnuales(anualesRes.data);
                 setPlanificacionesUnidad(unidadesRes.data);
+                setCodigosCurriculum(codigosRes.data);
 
                 // Buscar año activo
                 const activo = aniosRes.data.find(a => a.estado === 'ACTIVO');
@@ -74,6 +85,144 @@ const NuevaPlanificacion = () => {
             }));
         }
     }, [tipo, anioActivo]);
+
+    // Función helper para obtener el próximo lunes desde una fecha
+    const getNextMonday = (dateString) => {
+        const date = new Date(dateString);
+        const dayOfWeek = date.getUTCDay();
+        const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7 || 7;
+        date.setUTCDate(date.getUTCDate() + daysUntilMonday);
+        return date.toISOString().split('T')[0];
+    };
+
+    // Auto-sugerir fecha de inicio para planificaciones de unidad
+    useEffect(() => {
+        if (tipo !== 'unidad' || !formData.planificacion_anual) return;
+
+        const anualPadre = planificacionesAnuales.find(p => p.id === parseInt(formData.planificacion_anual));
+        if (!anualPadre) return;
+
+        // Buscar unidades existentes de esta planificación anual
+        const unidadesHermanas = planificacionesUnidad
+            .filter(u => u.planificacion_anual === parseInt(formData.planificacion_anual))
+            .sort((a, b) => new Date(a.fecha_fin || 0) - new Date(b.fecha_fin || 0));
+
+        let fechaInicioSugerida;
+
+        if (unidadesHermanas.length === 0) {
+            // Primera unidad: usar fecha de inicio de la planificación anual
+            fechaInicioSugerida = anualPadre.fecha_inicio;
+
+            // Si la fecha de inicio no cae en lunes, buscar el próximo lunes
+            const fecha = new Date(anualPadre.fecha_inicio);
+            if (fecha.getUTCDay() !== 1) { // 1 = lunes
+                fechaInicioSugerida = getNextMonday(anualPadre.fecha_inicio);
+            }
+        } else {
+            // Ya existen unidades: buscar el próximo lunes después de la última unidad
+            const ultimaUnidad = unidadesHermanas[unidadesHermanas.length - 1];
+            if (ultimaUnidad.fecha_fin) {
+                // Sumar un día a la fecha de fin de la última unidad
+                const diaPostFin = new Date(ultimaUnidad.fecha_fin);
+                diaPostFin.setUTCDate(diaPostFin.getUTCDate() + 1);
+                fechaInicioSugerida = getNextMonday(diaPostFin.toISOString().split('T')[0]);
+            }
+        }
+
+        if (fechaInicioSugerida && !formData.fecha_inicio) {
+            setFormData(prev => ({
+                ...prev,
+                fecha_inicio: fechaInicioSugerida
+            }));
+        }
+    }, [tipo, formData.planificacion_anual, planificacionesAnuales, planificacionesUnidad]);
+
+
+    // Cargar unidades curriculares cuando cambia curso/asignatura
+    useEffect(() => {
+        const cargarUnidadesCurriculares = async () => {
+            if (!formData.curso || !formData.asignatura || tipo !== 'unidad') return;
+
+            const curso = misCursos.find(c => c.id === parseInt(formData.curso));
+            const asignatura = getAsignaturasCurso().find(a => a.id === parseInt(formData.asignatura));
+
+            if (!curso || !asignatura) return;
+
+            // Convertir nivel y asignatura a códigos
+            const nivelCodigo = Object.entries(codigosCurriculum.niveles || {})
+                .find(([nombre]) => curso.nivel_nombre?.includes(nombre))?.[1];
+            const asigCodigo = Object.entries(codigosCurriculum.asignaturas || {})
+                .find(([nombre]) => asignatura.nombre?.includes(nombre) || nombre.includes(asignatura.nombre))?.[1];
+
+            if (!nivelCodigo || !asigCodigo) {
+                setUnidadesCurriculares([]);
+                return;
+            }
+
+            try {
+                setLoadingCurriculum(true);
+                const res = await apiClient.get(`/curriculum/unidades/${nivelCodigo}/${asigCodigo}/`);
+                setUnidadesCurriculares(res.data);
+            } catch (error) {
+                console.error('Error cargando unidades curriculares:', error);
+                setUnidadesCurriculares([]);
+            } finally {
+                setLoadingCurriculum(false);
+            }
+        };
+
+        cargarUnidadesCurriculares();
+    }, [formData.curso, formData.asignatura, tipo, misCursos, codigosCurriculum]);
+
+    // Cargar detalle de unidad curricular cuando se selecciona
+    useEffect(() => {
+        const cargarDetalleUnidad = async () => {
+            if (!formData.unidad_curricular_codigo) {
+                setUnidadCurricularSeleccionada(null);
+                return;
+            }
+
+            try {
+                setLoadingCurriculum(true);
+                const res = await apiClient.get(`/curriculum/unidad/${formData.unidad_curricular_codigo}/`);
+                setUnidadCurricularSeleccionada(res.data);
+
+                // Auto-llenar número de unidad y semanas
+                setFormData(prev => ({
+                    ...prev,
+                    numero_unidad: res.data.numero,
+                    semanas_duracion: res.data.semanas_sugeridas,
+                    titulo: prev.titulo || res.data.nombre
+                }));
+            } catch (error) {
+                console.error('Error cargando detalle unidad:', error);
+            } finally {
+                setLoadingCurriculum(false);
+            }
+        };
+
+        cargarDetalleUnidad();
+    }, [formData.unidad_curricular_codigo]);
+
+    // Auto-calcular fecha de fin cuando cambia fecha_inicio o semanas_duracion
+    useEffect(() => {
+        if (tipo !== 'unidad' || !formData.fecha_inicio || !formData.semanas_duracion) return;
+
+        const fechaInicio = new Date(formData.fecha_inicio);
+        // Calcular fecha de fin: inicio + semanas - 1 día (para terminar el viernes de la última semana)
+        const diasDuracion = (formData.semanas_duracion * 7) - 3; // Termina el viernes
+        const fechaFin = new Date(fechaInicio);
+        fechaFin.setUTCDate(fechaFin.getUTCDate() + diasDuracion);
+        const fechaFinStr = fechaFin.toISOString().split('T')[0];
+
+        // Solo actualizar si es diferente para evitar loops
+        if (formData.fecha_fin !== fechaFinStr) {
+            setFormData(prev => ({
+                ...prev,
+                fecha_fin: fechaFinStr
+            }));
+        }
+    }, [tipo, formData.fecha_inicio, formData.semanas_duracion]);
 
     // Obtener asignaturas del curso seleccionado
     const getAsignaturasCurso = () => {
@@ -329,6 +478,126 @@ const NuevaPlanificacion = () => {
                             {/* Campos específicos para Unidad */}
                             {tipo === 'unidad' && (
                                 <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                    {/* Selector de Unidad Curricular MINEDUC */}
+                                    {formData.curso && formData.asignatura && (
+                                        <div className="border-b border-green-200 dark:border-green-800 pb-4 mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                📚 Unidad del Currículum Nacional (MINEDUC)
+                                            </label>
+                                            {loadingCurriculum ? (
+                                                <div className="text-sm text-gray-500">Cargando unidades curriculares...</div>
+                                            ) : unidadesCurriculares.length > 0 ? (
+                                                <select
+                                                    value={formData.unidad_curricular_codigo}
+                                                    onChange={(e) => setFormData({ ...formData, unidad_curricular_codigo: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                                                >
+                                                    <option value="">Seleccionar unidad curricular...</option>
+                                                    {unidadesCurriculares.map(u => (
+                                                        <option key={u.codigo} value={u.codigo}>
+                                                            Unidad {u.numero}: {u.nombre} ({u.horas_sugeridas}h)
+                                                            {u.priorizado_2025 ? ' ⭐' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <p className="text-sm text-gray-500 italic">No hay unidades curriculares disponibles para este nivel/asignatura</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Preview de OAs y contenido curricular */}
+                                    {unidadCurricularSeleccionada && (
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                                            <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                                                <span className="mr-2">📋</span>
+                                                Contenido Curricular: {unidadCurricularSeleccionada.nombre}
+                                            </h4>
+
+                                            {/* Objetivos de Aprendizaje */}
+                                            {unidadCurricularSeleccionada.objetivos_aprendizaje?.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h5 className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2">
+                                                        Objetivos de Aprendizaje ({unidadCurricularSeleccionada.objetivos_aprendizaje.length})
+                                                    </h5>
+                                                    <ul className="space-y-2">
+                                                        {unidadCurricularSeleccionada.objetivos_aprendizaje.map(oa => (
+                                                            <li key={oa.codigo} className="text-sm text-gray-700 dark:text-gray-300 border-l-2 border-blue-400 pl-3">
+                                                                <span className="font-medium text-blue-600 dark:text-blue-300">{oa.codigo}</span>
+                                                                <span className="text-gray-500 mx-1">|</span>
+                                                                <span>{oa.descripcion.substring(0, 100)}...</span>
+                                                                {oa.priorizado_2025 && (
+                                                                    <span className="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
+                                                                        Priorizado 2025
+                                                                    </span>
+                                                                )}
+                                                                {/* Etiquetas de articulación */}
+                                                                {oa.articulaciones_con?.length > 0 && (
+                                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                                        {oa.articulaciones_con.map((art, idx) => (
+                                                                            <span key={idx} className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full">
+                                                                                🔗 Articulable con {art.asignatura_nombre}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            {/* OAT */}
+                                            {unidadCurricularSeleccionada.objetivos_transversales?.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h5 className="text-sm font-medium text-teal-700 dark:text-teal-400 mb-2">
+                                                        OAT ({unidadCurricularSeleccionada.objetivos_transversales.length})
+                                                    </h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {unidadCurricularSeleccionada.objetivos_transversales.map(oat => (
+                                                            <span key={oat.codigo} className="px-2 py-1 text-xs bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 rounded" title={oat.descripcion}>
+                                                                {oat.codigo}: {oat.dimension}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Habilidades */}
+                                            {unidadCurricularSeleccionada.habilidades?.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h5 className="text-sm font-medium text-orange-700 dark:text-orange-400 mb-2">
+                                                        Habilidades ({unidadCurricularSeleccionada.habilidades.length})
+                                                    </h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {unidadCurricularSeleccionada.habilidades.map(hab => (
+                                                            <span key={hab.codigo} className="px-2 py-1 text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded" title={hab.descripcion}>
+                                                                {hab.codigo}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Actitudes */}
+                                            {unidadCurricularSeleccionada.actitudes?.length > 0 && (
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-pink-700 dark:text-pink-400 mb-2">
+                                                        Actitudes ({unidadCurricularSeleccionada.actitudes.length})
+                                                    </h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {unidadCurricularSeleccionada.actitudes.map(act => (
+                                                            <span key={act.codigo} className="px-2 py-1 text-xs bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 rounded" title={act.descripcion}>
+                                                                {act.codigo}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Campos de unidad */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

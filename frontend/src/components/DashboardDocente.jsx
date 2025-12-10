@@ -181,14 +181,14 @@ const DashboardDocente = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                   }`}
               >
                 {tab.label}
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id
-                    ? 'bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-300'
-                    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                  ? 'bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-300'
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                   }`}>
                   {tab.count}
                 </span>
@@ -266,9 +266,18 @@ const DashboardDocente = () => {
                                   Unidad {unidad.numero_unidad}: {unidad.titulo}
                                 </span>
                               </div>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(unidad.estado)}`}>
-                                {unidad.estado}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(unidad.estado)}`}>
+                                  {unidad.estado}
+                                </span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/planificaciones/nueva?tipo=semanal&unidad=${unidad.id}`); }}
+                                  className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-0.5 rounded"
+                                  title="Añadir Semana"
+                                >
+                                  + Semana
+                                </button>
+                              </div>
                             </div>
 
                             {/* Semanas expandidas */}
@@ -291,6 +300,16 @@ const DashboardDocente = () => {
                             )}
                           </div>
                         ))}
+                        {/* Botón añadir unidad */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/planificaciones/nueva?tipo=unidad&anual=${anual.id}`); }}
+                          className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2"
+                        >
+                          <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Añadir Unidad
+                        </button>
                         {getUnidadesDeAnual(anual.id).length === 0 && (
                           <p className="text-sm text-gray-400 italic">Sin unidades planificadas</p>
                         )}
@@ -383,7 +402,7 @@ const DashboardDocente = () => {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
