@@ -62,11 +62,72 @@ LENGUA_2M_UNIDADES = [
      'horas_sugeridas': 60, 'semanas_sugeridas': 8, 'priorizado_2025': True},
 ]
 
+# III° Medio - Lengua y Literatura
+LENGUA_3M_OAS = [
+    {'codigo': '3m-Lyl-OA01', 'nivel': '3m', 'asignatura': 'Lyl', 'eje': 'Lectura', 'numero': 1,
+     'descripcion': 'Formular interpretaciones de textos literarios considerando aspectos contextuales e intertextuales.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '3m-Lyl-OA03', 'nivel': '3m', 'asignatura': 'Lyl', 'eje': 'Lectura', 'numero': 3,
+     'descripcion': 'Analizar textos no literarios considerando su propósito comunicativo.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '3m-Lyl-OA05', 'nivel': '3m', 'asignatura': 'Lyl', 'eje': 'Escritura', 'numero': 5,
+     'descripcion': 'Producir textos con propósitos argumentativos variados.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '3m-Lyl-OA08', 'nivel': '3m', 'asignatura': 'Lyl', 'eje': 'Comunicación Oral', 'numero': 8,
+     'descripcion': 'Dialogar para construir acuerdos considerando diversas perspectivas.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P2', 'indicadores': []},
+]
+
+LENGUA_3M_UNIDADES = [
+    {'codigo': '3m-Lyl-U1', 'nivel': '3m', 'asignatura': 'Lyl', 'numero': 1, 'nombre': 'Interpretación literaria',
+     'descripcion': 'Análisis de obras literarias con enfoque contextual.',
+     'oa_codigos': ['3m-Lyl-OA01'], 'oat_codigos': ['OAT-COG-01', 'OAT-COG-03'], 'habilidades_codigos': [], 'actitudes_codigos': ['Lyl-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': True},
+    {'codigo': '3m-Lyl-U2', 'nivel': '3m', 'asignatura': 'Lyl', 'numero': 2, 'nombre': 'Textos no literarios',
+     'descripcion': 'Análisis de medios y textos informativos.',
+     'oa_codigos': ['3m-Lyl-OA03'], 'oat_codigos': ['OAT-COG-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['Lyl-ACT02'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': True},
+    {'codigo': '3m-Lyl-U3', 'nivel': '3m', 'asignatura': 'Lyl', 'numero': 3, 'nombre': 'Argumentación',
+     'descripcion': 'Escritura de textos argumentativos.',
+     'oa_codigos': ['3m-Lyl-OA05', '3m-Lyl-OA08'], 'oat_codigos': ['OAT-SOC-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['Lyl-ACT03'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+]
+
+# IV° Medio - Lengua y Literatura
+LENGUA_4M_OAS = [
+    {'codigo': '4m-Lyl-OA01', 'nivel': '4m', 'asignatura': 'Lyl', 'eje': 'Lectura', 'numero': 1,
+     'descripcion': 'Evaluar críticamente textos literarios y no literarios considerando múltiples perspectivas.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '4m-Lyl-OA04', 'nivel': '4m', 'asignatura': 'Lyl', 'eje': 'Escritura', 'numero': 4,
+     'descripcion': 'Escribir ensayos que desarrollen un tema o punto de vista con fundamentos.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '4m-Lyl-OA07', 'nivel': '4m', 'asignatura': 'Lyl', 'eje': 'Comunicación Oral', 'numero': 7,
+     'descripcion': 'Exponer oralmente sobre temas de interés fundamentando sus planteamientos.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P2', 'indicadores': []},
+]
+
+LENGUA_4M_UNIDADES = [
+    {'codigo': '4m-Lyl-U1', 'nivel': '4m', 'asignatura': 'Lyl', 'numero': 1, 'nombre': 'Pensamiento crítico',
+     'descripcion': 'Evaluación crítica de textos diversos.',
+     'oa_codigos': ['4m-Lyl-OA01'], 'oat_codigos': ['OAT-COG-03'], 'habilidades_codigos': [], 'actitudes_codigos': ['Lyl-ACT02'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+    {'codigo': '4m-Lyl-U2', 'nivel': '4m', 'asignatura': 'Lyl', 'numero': 2, 'nombre': 'El ensayo',
+     'descripcion': 'Producción de ensayos académicos.',
+     'oa_codigos': ['4m-Lyl-OA04'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Lyl-ACT03'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+    {'codigo': '4m-Lyl-U3', 'nivel': '4m', 'asignatura': 'Lyl', 'numero': 3, 'nombre': 'Oratoria',
+     'descripcion': 'Exposiciones orales formales.',
+     'oa_codigos': ['4m-Lyl-OA07'], 'oat_codigos': ['OAT-SOC-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['Lyl-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': True},
+]
+
 LENGUA_MEDIA = {
     'actitudes': LENGUA_LITERATURA_ACTITUDES,
     'niveles': {
         '1m': {'oas': LENGUA_1M_OAS, 'unidades': LENGUA_1M_UNIDADES},
         '2m': {'oas': LENGUA_2M_OAS, 'unidades': LENGUA_2M_UNIDADES},
+        '3m': {'oas': LENGUA_3M_OAS, 'unidades': LENGUA_3M_UNIDADES},
+        '4m': {'oas': LENGUA_4M_OAS, 'unidades': LENGUA_4M_UNIDADES},
     }
 }
 
@@ -125,10 +186,68 @@ MATEMATICA_2M_UNIDADES = [
      'horas_sugeridas': 60, 'semanas_sugeridas': 8, 'priorizado_2025': True},
 ]
 
+# III° Medio - Matemática (electivo)
+MATEMATICA_3M_OAS = [
+    {'codigo': '3m-Mat-OA01', 'nivel': '3m', 'asignatura': 'Mat', 'eje': 'Números', 'numero': 1,
+     'descripcion': 'Aplicar procedimientos de cálculo con números complejos.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '3m-Mat-OA04', 'nivel': '3m', 'asignatura': 'Mat', 'eje': 'Álgebra', 'numero': 4,
+     'descripcion': 'Resolver sistemas de ecuaciones no lineales.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '3m-Mat-OA07', 'nivel': '3m', 'asignatura': 'Mat', 'eje': 'Probabilidad', 'numero': 7,
+     'descripcion': 'Resolver problemas que involucren probabilidades.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+]
+
+MATEMATICA_3M_UNIDADES = [
+    {'codigo': '3m-Mat-U1', 'nivel': '3m', 'asignatura': 'Mat', 'numero': 1, 'nombre': 'Números complejos',
+     'descripcion': 'Operaciones con números complejos.',
+     'oa_codigos': ['3m-Mat-OA01'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Mat-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
+    {'codigo': '3m-Mat-U2', 'nivel': '3m', 'asignatura': 'Mat', 'numero': 2, 'nombre': 'Ecuaciones no lineales',
+     'descripcion': 'Sistemas de ecuaciones.',
+     'oa_codigos': ['3m-Mat-OA04'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Mat-ACT02'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '3m-Mat-U3', 'nivel': '3m', 'asignatura': 'Mat', 'numero': 3, 'nombre': 'Probabilidad',
+     'descripcion': 'Cálculo de probabilidades.',
+     'oa_codigos': ['3m-Mat-OA07'], 'oat_codigos': ['OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['Mat-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
+]
+
+# IV° Medio - Matemática (electivo)
+MATEMATICA_4M_OAS = [
+    {'codigo': '4m-Mat-OA01', 'nivel': '4m', 'asignatura': 'Mat', 'eje': 'Cálculo', 'numero': 1,
+     'descripcion': 'Comprender el concepto de límite y continuidad.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Mat-OA03', 'nivel': '4m', 'asignatura': 'Mat', 'eje': 'Cálculo', 'numero': 3,
+     'descripcion': 'Aplicar derivadas para analizar funciones.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Mat-OA06', 'nivel': '4m', 'asignatura': 'Mat', 'eje': 'Estadística', 'numero': 6,
+     'descripcion': 'Aplicar distribuciones de probabilidad para resolver problemas.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+]
+
+MATEMATICA_4M_UNIDADES = [
+    {'codigo': '4m-Mat-U1', 'nivel': '4m', 'asignatura': 'Mat', 'numero': 1, 'nombre': 'Límites y continuidad',
+     'descripcion': 'Concepto de límite de funciones.',
+     'oa_codigos': ['4m-Mat-OA01'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Mat-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '4m-Mat-U2', 'nivel': '4m', 'asignatura': 'Mat', 'numero': 2, 'nombre': 'Derivadas',
+     'descripcion': 'Cálculo diferencial básico.',
+     'oa_codigos': ['4m-Mat-OA03'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Mat-ACT02'],
+     'horas_sugeridas': 60, 'semanas_sugeridas': 8, 'priorizado_2025': False},
+    {'codigo': '4m-Mat-U3', 'nivel': '4m', 'asignatura': 'Mat', 'numero': 3, 'nombre': 'Distribuciones',
+     'descripcion': 'Distribuciones de probabilidad.',
+     'oa_codigos': ['4m-Mat-OA06'], 'oat_codigos': ['OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['Mat-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
+]
+
 MATEMATICA_MEDIA = {
     'niveles': {
         '1m': {'oas': MATEMATICA_1M_OAS, 'unidades': MATEMATICA_1M_UNIDADES},
         '2m': {'oas': MATEMATICA_2M_OAS, 'unidades': MATEMATICA_2M_UNIDADES},
+        '3m': {'oas': MATEMATICA_3M_OAS, 'unidades': MATEMATICA_3M_UNIDADES},
+        '4m': {'oas': MATEMATICA_4M_OAS, 'unidades': MATEMATICA_4M_UNIDADES},
     }
 }
 
@@ -378,8 +497,92 @@ HISTORIA_MEDIA_1M_UNIDADES = [
      'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': True},
 ]
 
+# II° Medio - Historia
+HISTORIA_MEDIA_2M_OAS = [
+    {'codigo': '2m-His-OA01', 'nivel': '2m', 'asignatura': 'His', 'eje': 'Historia', 'numero': 1,
+     'descripcion': 'Analizar la Guerra Fría como un período histórico caracterizado por la tensión entre dos bloques.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '2m-His-OA05', 'nivel': '2m', 'asignatura': 'His', 'eje': 'Historia', 'numero': 5,
+     'descripcion': 'Evaluar el proceso de independencia de los países de América Latina y África.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '2m-His-OA09', 'nivel': '2m', 'asignatura': 'His', 'eje': 'Formación Ciudadana', 'numero': 9,
+     'descripcion': 'Analizar la experiencia histórica de Chile en el siglo XX.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+]
+
+HISTORIA_MEDIA_2M_UNIDADES = [
+    {'codigo': '2m-His-U1', 'nivel': '2m', 'asignatura': 'His', 'numero': 1, 'nombre': 'La Guerra Fría',
+     'descripcion': 'Tensión entre bloques y sus efectos globales.',
+     'oa_codigos': ['2m-His-OA01'], 'oat_codigos': ['OAT-SOC-01', 'OAT-COG-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['His-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+    {'codigo': '2m-His-U2', 'nivel': '2m', 'asignatura': 'His', 'numero': 2, 'nombre': 'Descolonización',
+     'descripcion': 'Independencia en América Latina y África.',
+     'oa_codigos': ['2m-His-OA05'], 'oat_codigos': ['OAT-SOC-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['His-ACT02'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': True},
+    {'codigo': '2m-His-U3', 'nivel': '2m', 'asignatura': 'His', 'numero': 3, 'nombre': 'Chile siglo XX',
+     'descripcion': 'Historia de Chile contemporáneo.',
+     'oa_codigos': ['2m-His-OA09'], 'oat_codigos': ['OAT-MOR-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['His-ACT03'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+]
+
 HISTORIA_MEDIA = {
     'niveles': {
         '1m': {'oas': HISTORIA_MEDIA_1M_OAS, 'unidades': HISTORIA_MEDIA_1M_UNIDADES},
+        '2m': {'oas': HISTORIA_MEDIA_2M_OAS, 'unidades': HISTORIA_MEDIA_2M_UNIDADES},
+    }
+}
+
+# ==========================================
+# CIENCIAS PARA LA CIUDADANÍA - I° y II° MEDIO
+# ==========================================
+
+CIENCIAS_CIUDADANIA_ACTITUDES = [
+    {'codigo': 'CpC-ACT01', 'asignatura': 'CpC', 'numero': 1,
+     'descripcion': 'Mostrar curiosidad e interés por conocer y comprender fenómenos del entorno natural y tecnológico.'},
+    {'codigo': 'CpC-ACT02', 'asignatura': 'CpC', 'numero': 2,
+     'descripcion': 'Manifestar una visión de sustentabilidad del medio ambiente.'},
+]
+
+CIENCIAS_CPC_1M_OAS = [
+    {'codigo': '1m-CpC-OA01', 'nivel': '1m', 'asignatura': 'CpC', 'eje': 'Bienestar y Salud', 'numero': 1,
+     'descripcion': 'Explicar los factores biológicos, ambientales y sociales que afectan la salud humana.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '1m-CpC-OA03', 'nivel': '1m', 'asignatura': 'CpC', 'eje': 'Bienestar y Salud', 'numero': 3,
+     'descripcion': 'Analizar los componentes de una alimentación equilibrada.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P2', 'indicadores': []},
+]
+
+CIENCIAS_CPC_1M_UNIDADES = [
+    {'codigo': '1m-CpC-U1', 'nivel': '1m', 'asignatura': 'CpC', 'numero': 1, 'nombre': 'Salud y bienestar',
+     'descripcion': 'Factores de la salud humana.',
+     'oa_codigos': ['1m-CpC-OA01', '1m-CpC-OA03'], 'oat_codigos': ['OAT-AFE-02', 'OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['CpC-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+]
+
+CIENCIAS_CPC_2M_OAS = [
+    {'codigo': '2m-CpC-OA01', 'nivel': '2m', 'asignatura': 'CpC', 'eje': 'Ambiente y Sostenibilidad', 'numero': 1,
+     'descripcion': 'Evaluar el impacto ambiental de las actividades humanas y proponer acciones de mitigación.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P1', 'indicadores': []},
+    {'codigo': '2m-CpC-OA04', 'nivel': '2m', 'asignatura': 'CpC', 'eje': 'Tecnología', 'numero': 4,
+     'descripcion': 'Analizar cómo la tecnología ha modificado las formas de vida de las personas.',
+     'priorizado_2025': True, 'nivel_priorizacion': 'P2', 'indicadores': []},
+]
+
+CIENCIAS_CPC_2M_UNIDADES = [
+    {'codigo': '2m-CpC-U1', 'nivel': '2m', 'asignatura': 'CpC', 'numero': 1, 'nombre': 'Sostenibilidad ambiental',
+     'descripcion': 'Impacto ambiental y acciones.',
+     'oa_codigos': ['2m-CpC-OA01'], 'oat_codigos': ['OAT-SOC-01', 'OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['CpC-ACT02'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': True},
+    {'codigo': '2m-CpC-U2', 'nivel': '2m', 'asignatura': 'CpC', 'numero': 2, 'nombre': 'Tecnología y sociedad',
+     'descripcion': 'Impacto de la tecnología.',
+     'oa_codigos': ['2m-CpC-OA04'], 'oat_codigos': ['OAT-COG-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['CpC-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': True},
+]
+
+CIENCIAS_CIUDADANIA_MEDIA = {
+    'actitudes': CIENCIAS_CIUDADANIA_ACTITUDES,
+    'niveles': {
+        '1m': {'oas': CIENCIAS_CPC_1M_OAS, 'unidades': CIENCIAS_CPC_1M_UNIDADES},
+        '2m': {'oas': CIENCIAS_CPC_2M_OAS, 'unidades': CIENCIAS_CPC_2M_UNIDADES},
     }
 }

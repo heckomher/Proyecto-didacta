@@ -19,7 +19,8 @@ from .curriculum_data_historia import HISTORIA_BASICA_COMPLETA
 # Importar datos - Media
 from .curriculum_data_media import (
     LENGUA_MEDIA, MATEMATICA_MEDIA, BIOLOGIA_MEDIA, FISICA_MEDIA,
-    QUIMICA_MEDIA, FILOSOFIA_MEDIA, CIUDADANA_MEDIA, HISTORIA_MEDIA
+    QUIMICA_MEDIA, FILOSOFIA_MEDIA, CIUDADANA_MEDIA, HISTORIA_MEDIA,
+    CIENCIAS_CIUDADANIA_MEDIA
 )
 
 
@@ -55,14 +56,15 @@ class Command(BaseCommand):
         
         # Poblar desde archivos de datos - EDUCACIÓN MEDIA
         self.stdout.write('\n📖 EDUCACIÓN MEDIA')
-        self.poblar_asignatura('Lengua y Literatura I°-II° Medio', LENGUA_MEDIA)
-        self.poblar_asignatura('Matemática I°-II° Medio', MATEMATICA_MEDIA)
+        self.poblar_asignatura('Lengua y Literatura I°-IV° Medio', LENGUA_MEDIA)
+        self.poblar_asignatura('Matemática I°-IV° Medio', MATEMATICA_MEDIA)
+        self.poblar_asignatura('Historia I°-II° Medio', HISTORIA_MEDIA)
+        self.poblar_asignatura('Ciencias para la Ciudadanía I°-II° Medio', CIENCIAS_CIUDADANIA_MEDIA)
         self.poblar_asignatura('Biología III° Medio (Electivo CH)', BIOLOGIA_MEDIA)
         self.poblar_asignatura('Física III° Medio (Electivo CH)', FISICA_MEDIA)
         self.poblar_asignatura('Química III° Medio (Electivo CH)', QUIMICA_MEDIA)
         self.poblar_asignatura('Filosofía III° Medio (Electivo CH)', FILOSOFIA_MEDIA)
         self.poblar_asignatura('Educación Ciudadana III° Medio', CIUDADANA_MEDIA)
-        self.poblar_asignatura('Historia I° Medio', HISTORIA_MEDIA)
         
         self.stdout.write(self.style.SUCCESS('\n✅ ¡Currículum Nacional poblado exitosamente!'))
     

@@ -21,6 +21,8 @@ const NuevaPlanificacion = () => {
     const [planificacionesAnuales, setPlanificacionesAnuales] = useState([]);
     const [planificacionesUnidad, setPlanificacionesUnidad] = useState([]);
     const [anioActivo, setAnioActivo] = useState(null);
+    const [periodosAcademicos, setPeriodosAcademicos] = useState([]);
+    const [advertenciaFechas, setAdvertenciaFechas] = useState(null);
 
     // Estado para currículum
     const [unidadesCurriculares, setUnidadesCurriculares] = useState([]);
@@ -51,17 +53,19 @@ const NuevaPlanificacion = () => {
     useEffect(() => {
         const cargarDatos = async () => {
             try {
-                const [cursosRes, anualesRes, unidadesRes, aniosRes, codigosRes] = await Promise.all([
+                const [cursosRes, anualesRes, unidadesRes, aniosRes, codigosRes, periodosRes] = await Promise.all([
                     apiClient.get('/docentes/mis-cursos/'),
                     apiClient.get('/planificaciones-anuales/'),
                     apiClient.get('/planificaciones-unidad/'),
                     apiClient.get('/anios-academicos/'),
-                    apiClient.get('/curriculum/codigos/')
+                    apiClient.get('/curriculum/codigos/'),
+                    apiClient.get('/periodos-academicos/')
                 ]);
                 setMisCursos(cursosRes.data);
                 setPlanificacionesAnuales(anualesRes.data);
                 setPlanificacionesUnidad(unidadesRes.data);
                 setCodigosCurriculum(codigosRes.data);
+                setPeriodosAcademicos(periodosRes.data);
 
                 // Buscar año activo
                 const activo = aniosRes.data.find(a => a.estado === 'ACTIVO');
@@ -85,6 +89,20 @@ const NuevaPlanificacion = () => {
             }));
         }
     }, [tipo, anioActivo]);
+
+    // Auto-heredar curso y asignatura de la planificación anual padre (para unidades)
+    useEffect(() => {
+        if (tipo !== 'unidad' || !formData.planificacion_anual) return;
+
+        const anualPadre = planificacionesAnuales.find(p => p.id === parseInt(formData.planificacion_anual));
+        if (anualPadre) {
+            setFormData(prev => ({
+                ...prev,
+                curso: anualPadre.curso?.toString() || '',
+                asignatura: anualPadre.asignatura?.toString() || ''
+            }));
+        }
+    }, [tipo, formData.planificacion_anual, planificacionesAnuales]);
 
     // Función helper para obtener el próximo lunes desde una fecha
     const getNextMonday = (dateString) => {
@@ -204,15 +222,75 @@ const NuevaPlanificacion = () => {
         cargarDetalleUnidad();
     }, [formData.unidad_curricular_codigo]);
 
-    // Auto-calcular fecha de fin cuando cambia fecha_inicio o semanas_duracion
+    // Auto-calcular fecha de fin validando contra periodos académicos
     useEffect(() => {
-        if (tipo !== 'unidad' || !formData.fecha_inicio || !formData.semanas_duracion) return;
+        if (tipo !== 'unidad' || !formData.fecha_inicio || !formData.semanas_duracion) {
+            setAdvertenciaFechas(null);
+            return;
+        }
 
         const fechaInicio = new Date(formData.fecha_inicio);
-        // Calcular fecha de fin: inicio + semanas - 1 día (para terminar el viernes de la última semana)
+        // Calcular fecha de fin ideal: inicio + semanas, terminando el viernes
         const diasDuracion = (formData.semanas_duracion * 7) - 3; // Termina el viernes
-        const fechaFin = new Date(fechaInicio);
+        let fechaFin = new Date(fechaInicio);
         fechaFin.setUTCDate(fechaFin.getUTCDate() + diasDuracion);
+
+        // Ajustar para que siempre termine en viernes
+        const diaSemanaFin = fechaFin.getUTCDay();
+        if (diaSemanaFin !== 5) { // 5 = viernes
+            const diasHastaViernes = diaSemanaFin === 0 ? -2 : (5 - diaSemanaFin);
+            fechaFin.setUTCDate(fechaFin.getUTCDate() + diasHastaViernes);
+        }
+
+        // Obtener año académico de la planificación anual padre
+        const anualPadre = planificacionesAnuales.find(p => p.id === parseInt(formData.planificacion_anual));
+        const anioAcademicoId = anualPadre?.anio_academico;
+
+        // Filtrar periodos del año académico correspondiente
+        const periodosDelAnio = periodosAcademicos
+            .filter(p => p.anio_academico === anioAcademicoId)
+            .sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
+
+        if (periodosDelAnio.length > 0) {
+            // Verificar si la fecha de fin calculada cae dentro de un periodo válido
+            const fechaFinDate = fechaFin;
+            const periodoValido = periodosDelAnio.find(p => {
+                const pInicio = new Date(p.fecha_inicio);
+                const pFin = new Date(p.fecha_fin);
+                return fechaFinDate >= pInicio && fechaFinDate <= pFin;
+            });
+
+            if (!periodoValido) {
+                // La fecha cae fuera de un periodo (vacaciones)
+                // Buscar el próximo periodo después de la fecha de fin calculada
+                const siguientePeriodo = periodosDelAnio.find(p => new Date(p.fecha_inicio) > fechaFinDate);
+
+                if (siguientePeriodo) {
+                    // Ajustar al primer viernes del siguiente periodo
+                    const inicioPeriodo = new Date(siguientePeriodo.fecha_inicio);
+                    const diaSemana = inicioPeriodo.getUTCDay();
+                    const diasHastaViernes = diaSemana <= 5 ? (5 - diaSemana) : (12 - diaSemana);
+                    const primerViernes = new Date(inicioPeriodo);
+                    primerViernes.setUTCDate(inicioPeriodo.getUTCDate() + diasHastaViernes);
+
+                    const fechaFinOriginal = fechaFin.toISOString().split('T')[0];
+                    fechaFin = primerViernes;
+
+                    setAdvertenciaFechas({
+                        mensaje: `La fecha de término original (${fechaFinOriginal}) cae en periodo de vacaciones. Se ha ajustado al primer viernes del ${siguientePeriodo.nombre}.`,
+                        tipo: 'warning'
+                    });
+                } else {
+                    setAdvertenciaFechas({
+                        mensaje: 'La fecha de término excede el año académico. Revise las semanas de duración.',
+                        tipo: 'error'
+                    });
+                }
+            } else {
+                setAdvertenciaFechas(null);
+            }
+        }
+
         const fechaFinStr = fechaFin.toISOString().split('T')[0];
 
         // Solo actualizar si es diferente para evitar loops
@@ -222,7 +300,7 @@ const NuevaPlanificacion = () => {
                 fecha_fin: fechaFinStr
             }));
         }
-    }, [tipo, formData.fecha_inicio, formData.semanas_duracion]);
+    }, [tipo, formData.fecha_inicio, formData.semanas_duracion, formData.planificacion_anual, periodosAcademicos, planificacionesAnuales]);
 
     // Obtener asignaturas del curso seleccionado
     const getAsignaturasCurso = () => {
@@ -376,46 +454,48 @@ const NuevaPlanificacion = () => {
                                 />
                             </div>
 
-                            {/* Curso y Asignatura */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Curso *
-                                    </label>
-                                    <select
-                                        required
-                                        value={formData.curso}
-                                        onChange={(e) => setFormData({ ...formData, curso: e.target.value, asignatura: '' })}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
-                                    >
-                                        <option value="">Seleccione un curso</option>
-                                        {misCursos.map(curso => (
-                                            <option key={curso.id} value={curso.id}>
-                                                {curso.nombre_curso} ({curso.nivel_nombre})
-                                            </option>
-                                        ))}
-                                    </select>
+                            {/* Curso y Asignatura - solo para anual y semanal, unidad lo hereda del padre */}
+                            {tipo !== 'unidad' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Curso *
+                                        </label>
+                                        <select
+                                            required
+                                            value={formData.curso}
+                                            onChange={(e) => setFormData({ ...formData, curso: e.target.value, asignatura: '' })}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                                        >
+                                            <option value="">Seleccione un curso</option>
+                                            {misCursos.map(curso => (
+                                                <option key={curso.id} value={curso.id}>
+                                                    {curso.nombre_curso} ({curso.nivel_nombre})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Asignatura *
+                                        </label>
+                                        <select
+                                            required
+                                            value={formData.asignatura}
+                                            onChange={(e) => setFormData({ ...formData, asignatura: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                                            disabled={!formData.curso}
+                                        >
+                                            <option value="">Seleccione una asignatura</option>
+                                            {getAsignaturasCurso().map(asig => (
+                                                <option key={asig.id} value={asig.id}>
+                                                    {asig.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Asignatura *
-                                    </label>
-                                    <select
-                                        required
-                                        value={formData.asignatura}
-                                        onChange={(e) => setFormData({ ...formData, asignatura: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
-                                        disabled={!formData.curso}
-                                    >
-                                        <option value="">Seleccione una asignatura</option>
-                                        {getAsignaturasCurso().map(asig => (
-                                            <option key={asig.id} value={asig.id}>
-                                                {asig.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                            )}
 
                             {/* Fechas */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -627,21 +707,53 @@ const NuevaPlanificacion = () => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                            Vincular a Planificación Anual (opcional)
+                                            📅 Planificación Anual *
                                         </label>
                                         <select
+                                            required
                                             value={formData.planificacion_anual}
                                             onChange={(e) => setFormData({ ...formData, planificacion_anual: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                                         >
-                                            <option value="">Sin vincular</option>
+                                            <option value="">Seleccione planificación anual...</option>
                                             {planificacionesAnuales.map(p => (
                                                 <option key={p.id} value={p.id}>
                                                     {p.titulo} ({p.curso_info?.nombre_curso})
                                                 </option>
                                             ))}
                                         </select>
+                                        {planificacionesAnuales.length === 0 && (
+                                            <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                                                ⚠️ No hay planificaciones anuales. <a href="/nueva-planificacion?tipo=anual" className="underline">Crear una primero</a>.
+                                            </p>
+                                        )}
                                     </div>
+
+                                    {/* Advertencia de fechas */}
+                                    {advertenciaFechas && (
+                                        <div className={`mt-4 p-4 rounded-lg flex items-start ${advertenciaFechas.tipo === 'error'
+                                            ? 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
+                                            : 'bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700'
+                                            }`}>
+                                            <span className="text-xl mr-3">
+                                                {advertenciaFechas.tipo === 'error' ? '❌' : '⚠️'}
+                                            </span>
+                                            <div>
+                                                <p className={`text-sm font-medium ${advertenciaFechas.tipo === 'error'
+                                                    ? 'text-red-800 dark:text-red-200'
+                                                    : 'text-yellow-800 dark:text-yellow-200'
+                                                    }`}>
+                                                    {advertenciaFechas.tipo === 'error' ? 'Error de fechas' : 'Ajuste de fechas'}
+                                                </p>
+                                                <p className={`text-sm mt-1 ${advertenciaFechas.tipo === 'error'
+                                                    ? 'text-red-700 dark:text-red-300'
+                                                    : 'text-yellow-700 dark:text-yellow-300'
+                                                    }`}>
+                                                    {advertenciaFechas.mensaje}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

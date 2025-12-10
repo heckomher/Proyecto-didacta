@@ -415,7 +415,7 @@ class PlanificacionUnidad(Planificacion):
         'PlanificacionAnual', 
         on_delete=models.CASCADE, 
         related_name='unidades',
-        null=True, blank=True
+        null=True, blank=True  # Nullable en BD, pero requerido en serializer
     )
     semanas_duracion = models.IntegerField(default=4)
     
@@ -426,6 +426,12 @@ class PlanificacionUnidad(Planificacion):
     
     def save(self, *args, **kwargs):
         self.tipo = 'UNIDAD'
+        # Heredar datos del padre para mantener normalización
+        if self.planificacion_anual:
+            self.curso = self.planificacion_anual.curso
+            self.asignatura = self.planificacion_anual.asignatura
+            self.docente = self.planificacion_anual.docente
+            self.anio_academico = self.planificacion_anual.anio_academico
         super().save(*args, **kwargs)
     
     def planificar_unidad(self):
@@ -443,7 +449,7 @@ class PlanificacionSemanal(Planificacion):
         'PlanificacionUnidad', 
         on_delete=models.CASCADE, 
         related_name='semanas',
-        null=True, blank=True
+        null=True, blank=True  # Nullable en BD, pero requerido en serializer
     )
     horas_academicas = models.IntegerField(default=45)
     
@@ -454,6 +460,12 @@ class PlanificacionSemanal(Planificacion):
     
     def save(self, *args, **kwargs):
         self.tipo = 'SEMANAL'
+        # Heredar datos de la cadena de padres para mantener normalización
+        if self.planificacion_unidad:
+            self.curso = self.planificacion_unidad.curso
+            self.asignatura = self.planificacion_unidad.asignatura
+            self.docente = self.planificacion_unidad.docente
+            self.anio_academico = self.planificacion_unidad.anio_academico
         super().save(*args, **kwargs)
     
     def planificar_semana(self):

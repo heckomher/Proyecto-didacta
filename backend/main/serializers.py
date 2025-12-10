@@ -360,6 +360,8 @@ class PlanificacionUnidadSerializer(serializers.ModelSerializer):
     anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
     planificacion_anual_titulo = serializers.CharField(source='planificacion_anual.titulo', read_only=True)
     semanas_count = serializers.SerializerMethodField()
+    # planificacion_anual es obligatorio
+    planificacion_anual = serializers.PrimaryKeyRelatedField(queryset=PlanificacionAnual.objects.all())
     
     class Meta:
         model = PlanificacionUnidad
@@ -367,9 +369,16 @@ class PlanificacionUnidadSerializer(serializers.ModelSerializer):
                  'fecha_inicio', 'fecha_fin', 'anio_academico', 'anio_academico_nombre', 'docente', 'docente_info',
                  'curso', 'curso_info', 'asignatura', 'asignatura_info', 'numero_unidad', 'planificacion_anual',
                  'planificacion_anual_titulo', 'semanas_duracion', 'semanas_count', 'objetivos_aprendizaje', 'recursos_pedagogicos']
+        # Los campos heredados del padre son de solo lectura
+        read_only_fields = ['curso', 'asignatura', 'docente', 'anio_academico']
     
     def get_semanas_count(self, obj):
         return obj.semanas.count()
+    
+    def validate_planificacion_anual(self, value):
+        if not value:
+            raise serializers.ValidationError("La planificación anual es obligatoria.")
+        return value
 
 class PlanificacionSemanalSerializer(serializers.ModelSerializer):
     docente_info = DocenteSerializer(source='docente', read_only=True)
@@ -377,6 +386,8 @@ class PlanificacionSemanalSerializer(serializers.ModelSerializer):
     asignatura_info = AsignaturaSerializer(source='asignatura', read_only=True)
     anio_academico_nombre = serializers.CharField(source='anio_academico.nombre', read_only=True)
     planificacion_unidad_titulo = serializers.CharField(source='planificacion_unidad.titulo', read_only=True)
+    # planificacion_unidad es obligatorio
+    planificacion_unidad = serializers.PrimaryKeyRelatedField(queryset=PlanificacionUnidad.objects.all())
     
     class Meta:
         model = PlanificacionSemanal
@@ -384,3 +395,10 @@ class PlanificacionSemanalSerializer(serializers.ModelSerializer):
                  'fecha_inicio', 'fecha_fin', 'anio_academico', 'anio_academico_nombre', 'docente', 'docente_info',
                  'curso', 'curso_info', 'asignatura', 'asignatura_info', 'numero_semana', 'planificacion_unidad',
                  'planificacion_unidad_titulo', 'horas_academicas', 'objetivos_aprendizaje', 'recursos_pedagogicos']
+        # Los campos heredados del padre son de solo lectura
+        read_only_fields = ['curso', 'asignatura', 'docente', 'anio_academico']
+    
+    def validate_planificacion_unidad(self, value):
+        if not value:
+            raise serializers.ValidationError("La planificación de unidad es obligatoria.")
+        return value
