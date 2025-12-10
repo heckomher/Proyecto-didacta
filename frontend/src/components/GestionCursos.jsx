@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import apiClient from '../services/api';
 
@@ -51,7 +52,7 @@ const GestionCursos = () => {
       setAniosAcademicos(aniosRes.data.filter(a => a.estado === 'ACTIVO' || a.estado === 'BORRADOR'));
     } catch (error) {
       console.error('Error cargando datos:', error);
-      alert('Error al cargar datos: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al cargar datos: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -85,11 +86,11 @@ const GestionCursos = () => {
       if (editingCurso) {
         const response = await apiClient.put(`/cursos/${editingCurso.id}/`, formData);
         console.log('Respuesta del servidor:', response.data);
-        alert('Curso actualizado exitosamente');
+        toast.success('Curso actualizado exitosamente');
       } else {
         const response = await apiClient.post('/cursos/', formData);
         console.log('Respuesta del servidor:', response.data);
-        alert('Curso creado exitosamente');
+        toast.success('Curso creado exitosamente');
       }
       setShowForm(false);
       setEditingCurso(null);
@@ -104,7 +105,7 @@ const GestionCursos = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error guardando curso:', error);
-      alert('Error al guardar curso: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al guardar curso: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -129,11 +130,11 @@ const GestionCursos = () => {
 
     try {
       await apiClient.delete(`/cursos/${id}/`);
-      alert('Curso eliminado');
+      toast.success('Curso eliminado');
       cargarDatos();
     } catch (error) {
       console.error('Error eliminando curso:', error);
-      alert('Error al eliminar curso');
+      toast.error('Error al eliminar curso');
     }
   };
 
@@ -154,7 +155,7 @@ const GestionCursos = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error asignando docente:', error);
-      alert('Error al asignar docente: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al asignar docente: ' + (error.response?.data?.detail || error.message));
     }
   };
 

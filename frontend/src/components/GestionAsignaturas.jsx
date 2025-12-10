@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import apiClient from '../services/api';
 
 const GestionAsignaturas = () => {
   const { user } = useAuth();
@@ -16,12 +17,6 @@ const GestionAsignaturas = () => {
 
   const isUTP = user?.role === 'UTP';
 
-  const getAuthHeaders = () => ({
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    }
-  });
-
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -29,24 +24,24 @@ const GestionAsignaturas = () => {
   const cargarDatos = async () => {
     try {
       const [asignaturasRes, docentesRes, cursosRes, nivelesRes] = await Promise.all([
-        axios.get('/asignaturas/', getAuthHeaders()),
-        axios.get('/docentes/', getAuthHeaders()),
-        axios.get('/cursos/', getAuthHeaders()),
-        axios.get('/niveles-educativos/', getAuthHeaders())
+        apiClient.get('/asignaturas/'),
+        apiClient.get('/docentes/'),
+        apiClient.get('/cursos/'),
+        apiClient.get('/niveles-educativos/')
       ]);
-      
+
       console.log('Asignaturas cargadas:', asignaturasRes.data);
       console.log('Docentes cargados:', docentesRes.data);
       console.log('Cursos cargados:', cursosRes.data.length);
       console.log('Niveles educativos:', nivelesRes.data);
-      
+
       setAsignaturas(asignaturasRes.data);
       setDocentes(docentesRes.data);
       setCursos(cursosRes.data.filter(c => !c.archivado));
       setNivelesEducativos(nivelesRes.data);
     } catch (error) {
       console.error('Error cargando datos:', error);
-      alert('Error al cargar datos: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al cargar datos: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -54,7 +49,7 @@ const GestionAsignaturas = () => {
 
   const abrirModalAsignar = async (asignatura) => {
     setAsignaturaSeleccionada(asignatura);
-    
+
     // Obtener todos los CursoAsignatura que tienen esta asignatura
     const cursosConAsignatura = [];
     for (const curso of cursos) {
@@ -69,44 +64,43 @@ const GestionAsignaturas = () => {
         }
       }
     }
-    
+
     setCursoAsignaturas(cursosConAsignatura);
     setShowAsignarModal(true);
   };
 
   const asignarDocente = async (cursoAsignaturaId, cursoId, docenteId) => {
     try {
-      await axios.post(
+      await apiClient.post(
         `/cursos/${cursoId}/asignar-docente/`,
-        { 
-          asignatura_id: asignaturaSeleccionada.id, 
-          docente_id: docenteId 
-        },
-        getAuthHeaders()
+        {
+          asignatura_id: asignaturaSeleccionada.id,
+          docente_id: docenteId
+        }
       );
-      
+
       // Recargar datos
       await cargarDatos();
-      
+
       // Actualizar la lista local
-      setCursoAsignaturas(prev => prev.map(ca => 
-        ca.id === cursoAsignaturaId 
+      setCursoAsignaturas(prev => prev.map(ca =>
+        ca.id === cursoAsignaturaId
           ? { ...ca, docente: docenteId, docente_nombre: docentes.find(d => d.id === docenteId)?.usuario_nombre }
           : ca
       ));
-      
+
     } catch (error) {
       console.error('Error asignando docente:', error);
-      alert('Error al asignar docente: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al asignar docente: ' + (error.response?.data?.detail || error.message));
     }
   };
 
-  const asignaturasFilteradas = filtroNivel 
+  const asignaturasFilteradas = filtroNivel
     ? asignaturas.filter(a => {
-        // Filtrar por nombre del nivel educativo
-        const nivelSeleccionado = nivelesEducativos.find(n => n.id === parseInt(filtroNivel));
-        return nivelSeleccionado && a.nivel_educativo_nombre === nivelSeleccionado.nombre;
-      })
+      // Filtrar por nombre del nivel educativo
+      const nivelSeleccionado = nivelesEducativos.find(n => n.id === parseInt(filtroNivel));
+      return nivelSeleccionado && a.nivel_educativo_nombre === nivelSeleccionado.nombre;
+    })
     : asignaturas;
 
   console.log('Estado actual:', {
@@ -199,10 +193,10 @@ const GestionAsignaturas = () => {
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {asignaturasFilteradas.map((asignatura) => {
-              const cursosConAsignatura = cursos.filter(c => 
+              const cursosConAsignatura = cursos.filter(c =>
                 c.asignaturas_asignadas?.some(ca => ca.asignatura === asignatura.id)
               );
-              
+
               return (
                 <tr key={asignatura.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">

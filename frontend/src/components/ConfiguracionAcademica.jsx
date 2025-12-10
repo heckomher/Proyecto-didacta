@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../services/api';
 
 const ConfiguracionAcademica = () => {
   const { theme } = useTheme();
@@ -48,25 +49,15 @@ const ConfiguracionAcademica = () => {
     anio_academico: null
   });
 
-  // Helper para obtener headers con token
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: { 'Authorization': `Bearer ${token}` }
-    };
-  };
-
   useEffect(() => {
     cargarDatos();
   }, []);
 
   const cargarDatos = async () => {
     try {
-      const config = getAuthHeaders();
-
       const [aniosRes, anioActivoRes] = await Promise.all([
-        axios.get('/anios-academicos/', config),
-        axios.get('/anios-academicos/activo/', config).catch(() => ({ data: null }))
+        apiClient.get('/anios-academicos/'),
+        apiClient.get('/anios-academicos/activo/').catch(() => ({ data: null }))
       ]);
       setAniosAcademicos(aniosRes.data);
       setAnioActivo(anioActivoRes.data);
@@ -83,10 +74,10 @@ const ConfiguracionAcademica = () => {
   const crearAnioAcademico = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/anios-academicos/', {
+      await apiClient.post('/anios-academicos/', {
         ...nuevoAnio,
         estado: 'BORRADOR'
-      }, getAuthHeaders());
+      });
       setShowNuevoAnio(false);
       setNuevoAnio({
         nombre: new Date().getFullYear().toString(),
@@ -95,17 +86,17 @@ const ConfiguracionAcademica = () => {
         tipo_periodo: 'SEMESTRE'
       });
       cargarDatos();
-      alert('Año académico creado en borrador. Actívelo para poder usarlo.');
+      toast.success('Año académico creado en borrador. Actívelo para poder usarlo.');
     } catch (error) {
       console.error('Error creando año académico:', error);
-      alert('Error al crear año académico: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al crear año académico: ' + (error.response?.data?.detail || error.message));
     }
   };
 
   const crearPeriodo = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/periodos-academicos/', nuevoPeriodo, getAuthHeaders());
+      await apiClient.post('/periodos-academicos/', nuevoPeriodo);
       setShowPeriodoForm(false);
       setNuevoPeriodo({
         nombre: '',
@@ -117,14 +108,14 @@ const ConfiguracionAcademica = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error creando periodo:', error);
-      alert('Error al crear periodo: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al crear periodo: ' + (error.response?.data?.detail || error.message));
     }
   };
 
   const crearFeriado = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/feriados/', nuevoFeriado, getAuthHeaders());
+      await apiClient.post('/feriados/', nuevoFeriado);
       setShowFeriadoForm(false);
       setNuevoFeriado({
         nombre: '',
@@ -135,14 +126,14 @@ const ConfiguracionAcademica = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error creando feriado:', error);
-      alert('Error al crear feriado: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al crear feriado: ' + (error.response?.data?.detail || error.message));
     }
   };
 
   const crearVacacion = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/vacaciones/', nuevaVacacion, getAuthHeaders());
+      await apiClient.post('/vacaciones/', nuevaVacacion);
       setShowVacacionForm(false);
       setNuevaVacacion({
         nombre: '',
@@ -154,7 +145,7 @@ const ConfiguracionAcademica = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error creando vacación:', error);
-      alert('Error al crear vacación: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al crear vacación: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -167,12 +158,12 @@ const ConfiguracionAcademica = () => {
         feriado: 'feriados',
         vacacion: 'vacaciones'
       };
-      await axios.delete(`/${endpoints[tipo]}/${id}/`, getAuthHeaders());
+      await apiClient.delete(`/${endpoints[tipo]}/${id}/`);
       cargarDatos();
     } catch (error) {
       console.error('Error eliminando:', error);
       const mensaje = error.response?.data?.detail || error.response?.data?.[0] || error.message;
-      alert('Error al eliminar: ' + mensaje);
+      toast.error('Error al eliminar: ' + mensaje);
     }
   };
 
@@ -181,12 +172,12 @@ const ConfiguracionAcademica = () => {
       return;
     }
     try {
-      await axios.post(`/anios-academicos/${id}/activar/`, {}, getAuthHeaders());
+      await apiClient.post(`/anios-academicos/${id}/activar/`, {});
       cargarDatos();
-      alert('Año académico activado exitosamente.');
+      toast.success('Año académico activado exitosamente.');
     } catch (error) {
       console.error('Error activando año:', error);
-      alert('Error al activar año académico: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al activar año académico: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -206,11 +197,11 @@ const ConfiguracionAcademica = () => {
 
     try {
       // Verificar contraseña del usuario actual
-      const { data: user } = await axios.get('/auth/user/');
+      const { data: user } = await apiClient.get('/auth/user/');
 
       // Intentar login para validar la contraseña
       try {
-        await axios.post('/auth/login/', {
+        await apiClient.post('/auth/login/', {
           username: user.username,
           password: passwordCierre
         });
@@ -220,18 +211,18 @@ const ConfiguracionAcademica = () => {
       }
 
       // Si la contraseña es correcta, cerrar el año
-      await axios.post(`/anios-academicos/${anioACerrar}/cerrar/`, {
+      await apiClient.post(`/anios-academicos/${anioACerrar}/cerrar/`, {
         password: passwordCierre
       });
       setShowConfirmarCierre(false);
       setPasswordCierre('');
       setAnioACerrar(null);
       cargarDatos();
-      alert('Año académico cerrado exitosamente. Ahora es de solo lectura.');
+      toast.success('Año académico cerrado exitosamente. Ahora es de solo lectura.');
     } catch (error) {
       console.error('Error cerrando año:', error);
       const mensaje = error.response?.data?.detail || error.message;
-      alert('Error al cerrar año académico: ' + mensaje);
+      toast.error('Error al cerrar año académico: ' + mensaje);
     }
   };
 
@@ -508,15 +499,15 @@ const ConfiguracionAcademica = () => {
                       {anio.periodos.map((periodo) => (
                         <div key={periodo.id} className="flex justify-between items-center text-sm">
                           <span className="text-gray-800 dark:text-gray-200">{periodo.nombre} ({periodo.fecha_inicio} - {periodo.fecha_fin})</span>
-                            <button
+                          <button
                             onClick={() => eliminarItem('periodo', periodo.id)}
                             className="inline-flex items-center px-2 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
-                            >
-                              <svg className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Eliminar
-                            </button>
+                          >
+                            <svg className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Eliminar
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -577,15 +568,15 @@ const ConfiguracionAcademica = () => {
                       {anio.vacaciones.map((vacacion) => (
                         <div key={vacacion.id} className="flex justify-between items-center text-sm">
                           <span className="text-gray-800 dark:text-gray-200">{vacacion.nombre} ({vacacion.fecha_inicio} - {vacacion.fecha_fin})</span>
-                            <button
+                          <button
                             onClick={() => eliminarItem('vacacion', vacacion.id)}
                             className="inline-flex items-center px-2 py-0.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded text-xs font-medium transition-colors"
-                            >
-                              <svg className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Eliminar
-                            </button>
+                          >
+                            <svg className="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Eliminar
+                          </button>
                         </div>
                       ))}
                     </div>

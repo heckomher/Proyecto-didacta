@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { authService } from '../services/api';
 
 const GestionUsuarios = () => {
@@ -49,23 +50,23 @@ const GestionUsuarios = () => {
     e.preventDefault();
 
     if (formData.password !== formData.password2) {
-      alert('Las contraseñas no coinciden');
+      toast.error('Las contraseñas no coinciden');
       return;
     }
 
     if (formData.password.length < 8) {
-      alert('⚠️ Contraseña débil: Debe tener al menos 8 caracteres');
+      toast.error('Contraseña débil: Debe tener al menos 8 caracteres');
       return;
     }
 
     if (/^\d+$/.test(formData.password)) {
-      alert('⚠️ Contraseña débil: No puede contener solo números');
+      toast.error('Contraseña débil: No puede contener solo números');
       return;
     }
 
     try {
       await authService.register(formData);
-      alert('Usuario creado exitosamente');
+      toast.success('Usuario creado exitosamente');
       setShowForm(false);
       setFormData({
         username: '',
@@ -82,12 +83,12 @@ const GestionUsuarios = () => {
       if (error.response?.data?.password) {
         const passwordErrors = error.response.data.password;
         if (Array.isArray(passwordErrors)) {
-          alert('⚠️ Contraseña no válida:\n' + passwordErrors.join('\n'));
+          toast.error('Contraseña no válida: ' + passwordErrors.join(', '));
         } else {
-          alert('⚠️ Contraseña no válida: ' + passwordErrors);
+          toast.error('Contraseña no válida: ' + passwordErrors);
         }
       } else {
-        alert('Error al crear usuario: ' + (error.response?.data?.detail || error.message));
+        toast.error('Error al crear usuario: ' + (error.response?.data?.detail || error.message));
       }
     }
   };
@@ -108,24 +109,24 @@ const GestionUsuarios = () => {
     e.preventDefault();
     try {
       await authService.updateUser(editingUser.id, editFormData);
-      alert('Usuario actualizado exitosamente');
+      toast.success('Usuario actualizado exitosamente');
       setShowEditModal(false);
       setEditingUser(null);
       cargarUsuarios();
     } catch (error) {
       console.error('Error actualizando usuario:', error);
-      alert('Error al actualizar usuario: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al actualizar usuario: ' + (error.response?.data?.detail || error.message));
     }
   };
 
   const handleToggleActive = async (usuario) => {
     try {
       const result = await authService.toggleUserActive(usuario.id);
-      alert(result.message);
+      toast.success(result.message);
       cargarUsuarios();
     } catch (error) {
       console.error('Error cambiando estado:', error);
-      alert('Error: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -137,13 +138,13 @@ const GestionUsuarios = () => {
   const handleDeleteConfirm = async () => {
     try {
       const result = await authService.deleteUser(userToDelete.id);
-      alert(result.message);
+      toast.success(result.message);
       setShowDeleteConfirm(false);
       setUserToDelete(null);
       cargarUsuarios();
     } catch (error) {
       console.error('Error eliminando usuario:', error);
-      alert('Error: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error: ' + (error.response?.data?.detail || error.message));
     }
   };
 

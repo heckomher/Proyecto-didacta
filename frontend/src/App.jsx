@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AcademicProvider } from './contexts/AcademicContext';
@@ -20,7 +21,7 @@ import './App.css';
 
 const ProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -31,7 +32,7 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   return token ? (
     <>
       <Navbar />
@@ -42,7 +43,7 @@ const ProtectedRoute = ({ children }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
-  
+
   // Superusers and UTP users see the UTP dashboard
   if (user && (user.role === 'UTP' || user.is_superuser)) {
     return <DashboardUTP />;
@@ -66,17 +67,42 @@ function App() {
                 <Route path="/historial-cursos" element={<ProtectedRoute><HistorialCursos /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
                 <Route path="/configuracion-academica" element={<ProtectedRoute><ConfiguracionAcademica /></ProtectedRoute>} />
-                
+
                 {/* Rutas de planificación */}
                 <Route path="/planificaciones" element={<ProtectedRoute><PlanificacionList /></ProtectedRoute>} />
                 <Route path="/planificaciones/anuales" element={<ProtectedRoute><PlanificacionList tipo="ANUAL" /></ProtectedRoute>} />
                 <Route path="/planificaciones/unidades" element={<ProtectedRoute><PlanificacionList tipo="UNIDAD" /></ProtectedRoute>} />
                 <Route path="/planificaciones/semanales" element={<ProtectedRoute><PlanificacionList tipo="SEMANAL" /></ProtectedRoute>} />
-                
+
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               </Routes>
             </div>
           </Router>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#333',
+                color: '#fff',
+              },
+              success: {
+                style: {
+                  background: '#10B981',
+                },
+                iconTheme: {
+                  primary: '#fff',
+                  secondary: '#10B981',
+                },
+              },
+              error: {
+                style: {
+                  background: '#EF4444',
+                },
+                duration: 5000,
+              },
+            }}
+          />
         </AcademicProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import apiClient from '../services/api';
 
 const HistorialCursos = () => {
   const navigate = useNavigate();
@@ -9,23 +10,16 @@ const HistorialCursos = () => {
   const [cursosArchivados, setCursosArchivados] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: { 'Authorization': `Bearer ${token}` }
-    };
-  };
-
   useEffect(() => {
     cargarAniosCerrados();
   }, []);
 
   const cargarAniosCerrados = async () => {
     try {
-      const response = await axios.get('/anios-academicos/', getAuthHeaders());
+      const response = await apiClient.get('/anios-academicos/');
       const cerrados = response.data.filter(a => a.estado === 'CERRADO');
       setAniosCerrados(cerrados);
-      
+
       if (cerrados.length > 0) {
         setAnioSeleccionado(cerrados[0].id);
         cargarCursosArchivados(cerrados[0].id);
@@ -34,7 +28,7 @@ const HistorialCursos = () => {
       }
     } catch (error) {
       console.error('Error cargando años cerrados:', error);
-      alert('Error al cargar historial: ' + (error.response?.data?.detail || error.message));
+      toast.error('Error al cargar historial: ' + (error.response?.data?.detail || error.message));
       setLoading(false);
     }
   };
@@ -42,11 +36,11 @@ const HistorialCursos = () => {
   const cargarCursosArchivados = async (anioId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/cursos/?anio_academico=${anioId}`, getAuthHeaders());
+      const response = await apiClient.get(`/cursos/?anio_academico=${anioId}`);
       setCursosArchivados(response.data.filter(c => c.archivado));
     } catch (error) {
       console.error('Error cargando cursos archivados:', error);
-      alert('Error al cargar cursos');
+      toast.error('Error al cargar cursos');
     } finally {
       setLoading(false);
     }
