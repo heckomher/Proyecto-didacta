@@ -131,40 +131,84 @@ class Command(BaseCommand):
         self.stdout.write('\n[3/3] Sembrando Electivos por Plan Diferenciado...')
         
         # Electivos organizados por plan diferenciado (3°-4° Medio)
+        # Basado en el currículum nacional chileno (MINEDUC)
         electivos_por_plan = {
-            'CH': [  # Científico-Humanista
-                {'nombre': 'Biología Celular y Molecular', 'desc': 'Estudio avanzado de biología'},
-                {'nombre': 'Física', 'desc': 'Ciencias físicas avanzadas'},
-                {'nombre': 'Química', 'desc': 'Ciencias químicas avanzadas'},
-                {'nombre': 'Probabilidades y Estadística', 'desc': 'Matemática aplicada'},
+            'CH': [  # Científico-Humanista - Formación Diferenciada
+                # Área Ciencias
+                {'nombre': 'Biología Celular y Molecular', 'desc': 'Procesos celulares y moleculares'},
+                {'nombre': 'Biología de los Ecosistemas', 'desc': 'Ecología y ecosistemas'},
+                {'nombre': 'Ciencias de la Salud', 'desc': 'Salud humana y prevención'},
+                {'nombre': 'Física', 'desc': 'Fenómenos físicos avanzados'},
+                {'nombre': 'Química', 'desc': 'Reacciones y procesos químicos'},
+                {'nombre': 'Probabilidades y Estadística Descriptiva e Inferencial', 'desc': 'Estadística aplicada'},
                 {'nombre': 'Límites, Derivadas e Integrales', 'desc': 'Cálculo diferencial e integral'},
-                {'nombre': 'Literatura e Identidad', 'desc': 'Análisis literario avanzado'},
-                {'nombre': 'Participación y Argumentación en Democracia', 'desc': 'Formación ciudadana avanzada'},
-                {'nombre': 'Geografía, Territorio y Desafíos Socioambientales', 'desc': 'Geografía humana y ambiental'},
-                {'nombre': 'Economía y Sociedad', 'desc': 'Fundamentos de economía'},
+                {'nombre': 'Geometría 3D', 'desc': 'Geometría espacial'},
+                # Área Humanidades
+                {'nombre': 'Literatura e Identidad', 'desc': 'Literatura y cultura'},
+                {'nombre': 'Taller de Literatura', 'desc': 'Creación literaria'},
+                {'nombre': 'Lectura y Escritura Especializadas', 'desc': 'Comunicación avanzada'},
+                {'nombre': 'Participación y Argumentación en Democracia', 'desc': 'Ciudadanía activa'},
+                {'nombre': 'Geografía, Territorio y Desafíos Socioambientales', 'desc': 'Geografía y ambiente'},
+                {'nombre': 'Economía y Sociedad', 'desc': 'Economía y desarrollo'},
+                {'nombre': 'Chile y la Región Latinoamericana', 'desc': 'Historia regional'},
+                {'nombre': 'Mundo Global', 'desc': 'Relaciones internacionales'},
+                {'nombre': 'Comprensión Histórica del Presente', 'desc': 'Historia contemporánea'},
+                # Área Filosofía
                 {'nombre': 'Estética', 'desc': 'Filosofía del arte'},
                 {'nombre': 'Filosofía Política', 'desc': 'Pensamiento político'},
+                {'nombre': 'Argumentación Filosófica', 'desc': 'Lógica y argumentación'},
+                # Área Artes
+                {'nombre': 'Artes Visuales, Audiovisuales y Multimediales', 'desc': 'Expresión artística multimedia'},
+                {'nombre': 'Interpretación y Creación en Danza', 'desc': 'Danza contemporánea'},
+                {'nombre': 'Interpretación y Creación en Teatro', 'desc': 'Artes escénicas'},
+                {'nombre': 'Interpretación y Creación Musical', 'desc': 'Música y composición'},
+                {'nombre': 'Diseño y Arquitectura', 'desc': 'Diseño y espacio'},
+                # Área Educación Física
+                {'nombre': 'Ciencias del Ejercicio Físico y Deportivo', 'desc': 'Fisiología del deporte'},
+                {'nombre': 'Promoción de Estilos de Vida Activos y Saludables', 'desc': 'Vida saludable'},
             ],
-            'TP': [  # Técnico Profesional
-                {'nombre': 'Administración', 'desc': 'Fundamentos de administración'},
-                {'nombre': 'Contabilidad', 'desc': 'Principios contables'},
-                {'nombre': 'Electricidad', 'desc': 'Fundamentos de electricidad'},
-                {'nombre': 'Electrónica', 'desc': 'Circuitos y sistemas electrónicos'},
-                {'nombre': 'Mecánica Industrial', 'desc': 'Procesos mecánicos industriales'},
+            'TP': [  # Técnico Profesional - Especialidades
+                # Sector Administración
+                {'nombre': 'Administración', 'desc': 'Gestión empresarial'},
+                {'nombre': 'Contabilidad', 'desc': 'Registros contables'},
+                {'nombre': 'Recursos Humanos', 'desc': 'Gestión de personas'},
+                {'nombre': 'Logística', 'desc': 'Cadena de suministro'},
+                {'nombre': 'Servicios de Turismo', 'desc': 'Industria turística'},
+                # Sector Metalmecánica
+                {'nombre': 'Mecánica Industrial', 'desc': 'Manufactura mecánica'},
                 {'nombre': 'Mecánica Automotriz', 'desc': 'Sistemas automotrices'},
-                {'nombre': 'Construcción', 'desc': 'Técnicas de construcción'},
+                {'nombre': 'Construcciones Metálicas', 'desc': 'Soldadura y estructuras'},
+                {'nombre': 'Mecánica de Mantenimiento de Aeronaves', 'desc': 'Aviación'},
+                # Sector Electricidad
+                {'nombre': 'Electricidad', 'desc': 'Instalaciones eléctricas'},
+                {'nombre': 'Electrónica', 'desc': 'Sistemas electrónicos'},
+                {'nombre': 'Telecomunicaciones', 'desc': 'Comunicaciones'},
+                # Sector Construcción
+                {'nombre': 'Edificación', 'desc': 'Construcción de edificios'},
+                {'nombre': 'Terminaciones de Construcción', 'desc': 'Acabados'},
+                {'nombre': 'Instalaciones Sanitarias', 'desc': 'Gasfitería'},
+                {'nombre': 'Refrigeración y Climatización', 'desc': 'HVAC'},
+                # Sector Salud y Educación
                 {'nombre': 'Enfermería', 'desc': 'Cuidados de salud'},
-                {'nombre': 'Gastronomía', 'desc': 'Artes culinarias'},
+                {'nombre': 'Atención de Párvulos', 'desc': 'Educación inicial'},
+                {'nombre': 'Atención de Adultos Mayores', 'desc': 'Gerontología'},
+                # Sector Alimentación
+                {'nombre': 'Gastronomía', 'desc': 'Cocina y pastelería'},
+                {'nombre': 'Elaboración Industrial de Alimentos', 'desc': 'Industria alimentaria'},
+                # Sector Tecnologías
                 {'nombre': 'Programación', 'desc': 'Desarrollo de software'},
-                {'nombre': 'Conectividad y Redes', 'desc': 'Infraestructura de redes'},
+                {'nombre': 'Conectividad y Redes', 'desc': 'Infraestructura TI'},
             ],
-            'ARTISTICO': [  # Artístico
-                {'nombre': 'Artes Visuales Avanzado', 'desc': 'Expresión visual especializada'},
+            'ARTISTICO': [  # Artístico - Formación Diferenciada
+                {'nombre': 'Artes Visuales', 'desc': 'Expresión visual especializada'},
                 {'nombre': 'Artes Musicales', 'desc': 'Formación musical avanzada'},
                 {'nombre': 'Artes Escénicas', 'desc': 'Teatro y performance'},
                 {'nombre': 'Danza', 'desc': 'Expresión corporal y danza'},
                 {'nombre': 'Audiovisual', 'desc': 'Producción audiovisual'},
                 {'nombre': 'Diseño', 'desc': 'Diseño gráfico y de productos'},
+                {'nombre': 'Fotografía', 'desc': 'Arte fotográfico'},
+                {'nombre': 'Escultura', 'desc': 'Arte tridimensional'},
+                {'nombre': 'Grabado y Estampa', 'desc': 'Técnicas de impresión artística'},
             ],
         }
         
