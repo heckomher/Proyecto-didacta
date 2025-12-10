@@ -156,6 +156,24 @@ const GestionUsuarios = () => {
     return badges[role] || badges.DOCENTE;
   };
 
+  // Verificar si un usuario es admin
+  const isAdmin = (user) => {
+    return ['UTP', 'EQUIPO_DIRECTIVO'].includes(user.role) || user.is_superuser;
+  };
+
+  // Contar admins activos excluyendo un usuario específico
+  const countOtherActiveAdmins = (excludeId) => {
+    return usuarios.filter(
+      u => u.activo && isAdmin(u) && u.id !== excludeId
+    ).length;
+  };
+
+  // Verificar si un usuario es el último admin activo
+  const isLastActiveAdmin = (user) => {
+    if (!isAdmin(user) || !user.activo) return false;
+    return countOtherActiveAdmins(user.id) === 0;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -231,21 +249,39 @@ const GestionUsuarios = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleToggleActive(usuario)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${usuario.activo
+                    {usuario.activo && isLastActiveAdmin(usuario) ? (
+                      <span
+                        className="px-3 py-1 bg-gray-200 text-gray-500 rounded text-xs font-medium cursor-not-allowed"
+                        title="Último administrador activo"
+                      >
+                        Protegido
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleToggleActive(usuario)}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${usuario.activo
                           ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                           : 'bg-green-100 text-green-800 hover:bg-green-200'
-                        }`}
-                    >
-                      {usuario.activo ? 'Desactivar' : 'Activar'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(usuario)}
-                      className="px-3 py-1 bg-red-100 text-red-800 hover:bg-red-200 rounded text-xs font-medium transition-colors"
-                    >
-                      Eliminar
-                    </button>
+                          }`}
+                      >
+                        {usuario.activo ? 'Desactivar' : 'Activar'}
+                      </button>
+                    )}
+                    {isLastActiveAdmin(usuario) ? (
+                      <span
+                        className="px-3 py-1 bg-gray-200 text-gray-500 rounded text-xs font-medium cursor-not-allowed"
+                        title="No se puede eliminar al último administrador"
+                      >
+                        Eliminar
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteClick(usuario)}
+                        className="px-3 py-1 bg-red-100 text-red-800 hover:bg-red-200 rounded text-xs font-medium transition-colors"
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
