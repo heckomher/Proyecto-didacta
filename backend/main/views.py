@@ -296,9 +296,20 @@ def toggle_user_active(request, pk):
     except User.DoesNotExist:
         return Response({"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
     
-    # No permitir desactivarse a sí mismo
-    if user.id == request.user.id:
-        return Response({"detail": "No puede desactivarse a sí mismo"}, status=status.HTTP_400_BAD_REQUEST)
+    # Si se está desactivando (no activando), verificar que no sea el último admin
+    if user.activo:  # Se va a desactivar
+        # Contar admins activos que NO sean este usuario
+        from django.db.models import Q
+        other_active_admins = User.objects.filter(
+            activo=True
+        ).filter(
+            Q(role__in=['UTP', 'EQUIPO_DIRECTIVO']) | Q(is_superuser=True)
+        ).exclude(pk=pk).count()
+        
+        if other_active_admins == 0:
+            return Response({
+                "detail": "No puede desactivar al último administrador activo del sistema"
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     user.activo = not user.activo
     user.save()
@@ -316,9 +327,22 @@ def delete_user(request, pk):
     except User.DoesNotExist:
         return Response({"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
     
-    # No permitir eliminarse a sí mismo
-    if user.id == request.user.id:
-        return Response({"detail": "No puede eliminarse a sí mismo"}, status=status.HTTP_400_BAD_REQUEST)
+    # Verificar si es un admin (tiene permisos de gestión)
+    is_admin = user.role in ['UTP', 'EQUIPO_DIRECTIVO'] or user.is_superuser
+    
+    if is_admin and user.activo:
+        # Contar otros admins activos
+        from django.db.models import Q
+        other_active_admins = User.objects.filter(
+            activo=True
+        ).filter(
+            Q(role__in=['UTP', 'EQUIPO_DIRECTIVO']) | Q(is_superuser=True)
+        ).exclude(pk=pk).count()
+        
+        if other_active_admins == 0:
+            return Response({
+                "detail": "No puede eliminar al último administrador activo del sistema"
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     username = user.username
     user.delete()
