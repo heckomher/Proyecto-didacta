@@ -584,6 +584,35 @@ class DocenteViewSet(viewsets.ModelViewSet):
             # Los docentes solo pueden ver su propio perfil
             queryset = queryset.filter(usuario=self.request.user)
         return queryset
+    
+    @action(detail=False, methods=['get'], url_path='mis-cursos')
+    def mis_cursos(self, request):
+        """Retorna cursos donde el docente autenticado tiene asignaturas asignadas"""
+        try:
+            docente = Docente.objects.get(usuario=request.user)
+        except Docente.DoesNotExist:
+            return Response({'error': 'No tienes perfil de docente'}, status=400)
+        
+        # Obtener cursos activos donde el docente tiene asignaturas
+        cursos = Curso.objects.filter(
+            asignaturas_asignadas__docente=docente,
+            archivado=False
+        ).distinct().select_related('nivel', 'anio_academico')
+        
+        # Incluir las asignaturas del docente en cada curso
+        result = []
+        for curso in cursos:
+            curso_data = CursoSerializer(curso).data
+            mis_asignaturas = curso.asignaturas_asignadas.filter(docente=docente)
+            curso_data['mis_asignaturas'] = [
+                {
+                    'id': ca.asignatura.id,
+                    'nombre': ca.asignatura.nombre_asignatura
+                } for ca in mis_asignaturas
+            ]
+            result.append(curso_data)
+        
+        return Response(result)
 
 class EquipoDirectivoViewSet(viewsets.ModelViewSet):
     queryset = EquipoDirectivo.objects.select_related('usuario').all()
@@ -789,6 +818,18 @@ class PlanificacionAnualViewSet(viewsets.ModelViewSet):
         if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
+    
+    @action(detail=True, methods=['post'], url_path='enviar-validacion')
+    def enviar_validacion(self, request, pk=None):
+        """Enviar planificación anual a validación"""
+        planificacion = self.get_object()
+        if planificacion.autor != request.user:
+            return Response({'error': 'Solo puedes enviar tus propias planificaciones'}, status=403)
+        if planificacion.estado != 'BORRADOR':
+            return Response({'error': 'Solo se pueden enviar planificaciones en borrador'}, status=400)
+        planificacion.estado = 'PENDIENTE'
+        planificacion.save()
+        return Response({'message': 'Planificación enviada a validación'})
 
 class PlanificacionUnidadViewSet(viewsets.ModelViewSet):
     serializer_class = PlanificacionUnidadSerializer
@@ -801,6 +842,18 @@ class PlanificacionUnidadViewSet(viewsets.ModelViewSet):
         if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
+    
+    @action(detail=True, methods=['post'], url_path='enviar-validacion')
+    def enviar_validacion(self, request, pk=None):
+        """Enviar planificación de unidad a validación"""
+        planificacion = self.get_object()
+        if planificacion.autor != request.user:
+            return Response({'error': 'Solo puedes enviar tus propias planificaciones'}, status=403)
+        if planificacion.estado != 'BORRADOR':
+            return Response({'error': 'Solo se pueden enviar planificaciones en borrador'}, status=400)
+        planificacion.estado = 'PENDIENTE'
+        planificacion.save()
+        return Response({'message': 'Planificación enviada a validación'})
 
 class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
     serializer_class = PlanificacionSemanalSerializer
@@ -813,3 +866,16 @@ class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
         if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
+    
+    @action(detail=True, methods=['post'], url_path='enviar-validacion')
+    def enviar_validacion(self, request, pk=None):
+        """Enviar planificación semanal a validación"""
+        planificacion = self.get_object()
+        if planificacion.autor != request.user:
+            return Response({'error': 'Solo puedes enviar tus propias planificaciones'}, status=403)
+        if planificacion.estado != 'BORRADOR':
+            return Response({'error': 'Solo se pueden enviar planificaciones en borrador'}, status=400)
+        planificacion.estado = 'PENDIENTE'
+        planificacion.save()
+        return Response({'message': 'Planificación enviada a validación'})
+
