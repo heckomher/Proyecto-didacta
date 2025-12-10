@@ -99,6 +99,11 @@ export const authService = {
     return response.data;
   },
 
+  async checkUsername(username) {
+    const response = await apiClient.post('/auth/check-username/', { username });
+    return response.data;
+  },
+
   async logout() {
     await apiClient.post('/auth/logout/');
   },

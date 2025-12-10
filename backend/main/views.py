@@ -36,9 +36,9 @@ class RegisterView(generics.CreateAPIView):
         logger.error(f"[REGISTER] Datos recibidos: {request.data}")
         logger.error(f"[REGISTER] Usuario autenticado: {request.user.is_authenticated}, Role: {getattr(request.user, 'role', None)}")
         
-        if User.objects.exists() and (not request.user.is_authenticated or request.user.role != 'UTP'):
-            logger.error("[REGISTER] Permiso denegado: Usuario no es UTP")
-            return Response({"error": "Only UTP can register new users."}, status=status.HTTP_403_FORBIDDEN)
+        if User.objects.exists() and (not request.user.is_authenticated or (request.user.role not in ['UTP', 'EQUIPO_DIRECTIVO'] and not request.user.is_superuser)):
+            logger.error("[REGISTER] Permiso denegado: Usuario no es UTP ni superusuario")
+            return Response({"error": "Only UTP or superusers can register new users."}, status=status.HTTP_403_FORBIDDEN)
         
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
@@ -59,13 +59,27 @@ def logout_view(request):
     # For JWT, logout is handled on client side by removing token
     return Response({"message": "Logged out successfully."})
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def check_username(request):
+    """
+    Verifica si un nombre de usuario ya existe.
+    Retorna { "exists": true/false }
+    """
+    username = request.data.get('username')
+    if not username:
+        return Response({"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    exists = User.objects.filter(username=username).exists()
+    return Response({"exists": exists})
+
 class PlanificacionListCreateView(generics.ListCreateAPIView):
     serializer_class = PlanificacionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = Planificacion.objects.select_related('anio_academico', 'autor')
-        if self.request.user.role == 'UTP':
+        if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
     
@@ -112,7 +126,7 @@ class PlanificacionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.role == 'UTP':
+        if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return Planificacion.objects.all()
         return Planificacion.objects.filter(autor=self.request.user)
 
@@ -132,7 +146,7 @@ def enviar_a_validacion(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def validar_planificacion(request, pk):
-    if request.user.role != 'UTP':
+    if request.user.role not in ['UTP', 'EQUIPO_DIRECTIVO']:
         return Response({"error": "No autorizado."}, status=403)
     try:
         planificacion = Planificacion.objects.get(pk=pk)
@@ -156,7 +170,7 @@ class EventoListCreateView(generics.ListCreateAPIView):
         return Evento.objects
 
     def perform_create(self, serializer):
-        if self.request.user.role != 'UTP':
+        if self.request.user.role not in ['UTP', 'EQUIPO_DIRECTIVO']:
             raise serializers.ValidationError("Only UTP can create events.")
         serializer.save(creado_por=self.request.user.username)
 
@@ -168,12 +182,12 @@ class EventoDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Evento.objects
 
     def perform_update(self, serializer):
-        if self.request.user.role != 'UTP':
+        if self.request.user.role not in ['UTP', 'EQUIPO_DIRECTIVO']:
             raise serializers.ValidationError("Only UTP can update events.")
         serializer.save()
 
     def perform_destroy(self, instance):
-        if self.request.user.role != 'UTP':
+        if self.request.user.role not in ['UTP', 'EQUIPO_DIRECTIVO']:
             raise serializers.ValidationError("Only UTP can delete events.")
         instance.delete()
 
@@ -240,7 +254,7 @@ def current_user(request):
 @permission_classes([IsAuthenticated])
 def list_users(request):
     """Lista todos los usuarios - solo para UTP y superuser"""
-    if not (request.user.role == 'UTP' or request.user.is_superuser):
+    if not (request.user.role in ['UTP', 'EQUIPO_DIRECTIVO'] or request.user.is_superuser):
         return Response({"detail": "No tiene permisos para ver usuarios"}, status=status.HTTP_403_FORBIDDEN)
     
     users = User.objects.all()
@@ -269,7 +283,7 @@ class IsUTPOrReadOnly(IsAuthenticated):
         if request.method in ['GET', 'HEAD', 'OPTIONS']:
             return True
         # Métodos de escritura solo para UTP o superuser
-        return request.user.role == 'UTP' or request.user.is_superuser
+        return request.user.role in ['UTP', 'EQUIPO_DIRECTIVO'] or request.user.is_superuser
 
 class AnioAcademicoViewSet(viewsets.ModelViewSet):
     queryset = AnioAcademico.objects.all()
@@ -664,7 +678,7 @@ class PlanificacionAnualViewSet(viewsets.ModelViewSet):
         queryset = PlanificacionAnual.objects.select_related(
             'anio_academico', 'docente__usuario', 'curso', 'asignatura'
         ).all()
-        if self.request.user.role == 'UTP':
+        if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
 
@@ -676,7 +690,7 @@ class PlanificacionUnidadViewSet(viewsets.ModelViewSet):
         queryset = PlanificacionUnidad.objects.select_related(
             'anio_academico', 'docente__usuario', 'curso', 'asignatura', 'planificacion_anual'
         ).all()
-        if self.request.user.role == 'UTP':
+        if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
 
@@ -688,6 +702,6 @@ class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
         queryset = PlanificacionSemanal.objects.select_related(
             'anio_academico', 'docente__usuario', 'curso', 'asignatura', 'planificacion_unidad'
         ).all()
-        if self.request.user.role == 'UTP':
+        if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)

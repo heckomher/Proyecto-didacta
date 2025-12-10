@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
+import { authService } from '../services/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,25 +14,78 @@ const Register = () => {
     password2: '',
   });
   const [error, setError] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState([]);
+  const [usernameStatus, setUsernameStatus] = useState({
+    checking: false,
+    available: null,
+    message: ''
+  });
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
     setError('');
+
+    if (name === 'password') {
+      validatePassword(value);
+    }
+  };
+
+  const validatePassword = (password) => {
+    const errors = [];
+    if (password.length < 8) {
+      errors.push('Debe tener al menos 8 caracteres');
+    }
+    if (/^\d+$/.test(password)) {
+      errors.push('No puede ser solo numérica');
+    }
+    // Simple check for "common" passwords could ideally be better, but we rely on length mainly here locally
+    setPasswordErrors(errors);
+  };
+
+  const checkUsername = async () => {
+    if (!formData.username) return;
+
+    setUsernameStatus({ checking: true, available: null, message: '' });
+    try {
+      const response = await authService.checkUsername(formData.username);
+      if (response.exists) {
+        setUsernameStatus({
+          checking: false,
+          available: false,
+          message: 'El nombre de usuario ya está ocupado'
+        });
+      } else {
+        setUsernameStatus({
+          checking: false,
+          available: true,
+          message: 'Nombre de usuario disponible'
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setUsernameStatus({
+        checking: false,
+        available: null,
+        message: 'Error al verificar usuario'
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validación de contraseñas
-    if (formData.password !== formData.password2) {
-      setError('Las contraseñas no coinciden');
+
+    validatePassword(formData.password);
+    if (passwordErrors.length > 0 || formData.password !== formData.password2) {
+      setError('Por favor corrige los errores de contraseña');
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    if (usernameStatus.available === false) {
+      setError('El nombre de usuario no está disponible');
       return;
     }
 
@@ -39,7 +93,8 @@ const Register = () => {
     if (success) {
       navigate('/login');
     } else {
-      setError('Error al registrar usuario. Por favor, intenta de nuevo.');
+      // Intentar mejorar el mensaje de error si es posible
+      setError('Error al registrar usuario. Revisa los datos e intenta de nuevo.');
     }
   };
 
@@ -107,15 +162,34 @@ const Register = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Nombre de Usuario
               </label>
-              <input
-                type="text"
-                name="username"
-                placeholder="jperez"
-                value={formData.username}
-                onChange={handleChange}
-                className="input"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="jperez"
+                  value={formData.username}
+                  onChange={handleChange}
+                  onBlur={checkUsername}
+                  className={`input ${usernameStatus.available === true
+                      ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
+                      : usernameStatus.available === false
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : ''
+                    }`}
+                  required
+                />
+                {usernameStatus.checking && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                  </div>
+                )}
+              </div>
+              {usernameStatus.message && (
+                <p className={`mt-1 text-sm ${usernameStatus.available === true ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                  {usernameStatus.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -137,9 +211,9 @@ const Register = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Rol
               </label>
-              <select 
-                name="role" 
-                value={formData.role} 
+              <select
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
                 className="input"
               >
@@ -162,6 +236,13 @@ const Register = () => {
                   className="input"
                   required
                 />
+                {passwordErrors.length > 0 && (
+                  <ul className="mt-1 text-xs text-red-600 list-disc list-inside">
+                    {passwordErrors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -176,11 +257,18 @@ const Register = () => {
                   className="input"
                   required
                 />
+                {formData.password2 && formData.password !== formData.password2 && (
+                  <p className="mt-1 text-xs text-red-600">Las contraseñas no coinciden</p>
+                )}
               </div>
             </div>
 
             <div className="pt-4">
-              <button type="submit" className="btn-primary w-full">
+              <button
+                type="submit"
+                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={usernameStatus.available === false || passwordErrors.length > 0 || (formData.password2 && formData.password !== formData.password2)}
+              >
                 Crear Cuenta
               </button>
             </div>

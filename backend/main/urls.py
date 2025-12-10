@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import (RegisterView, LoginView, logout_view, PlanificacionListCreateView, 
+from .views import (RegisterView, LoginView, logout_view, check_username, PlanificacionListCreateView, 
                    PlanificacionDetailView, enviar_a_validacion, validar_planificacion, 
                    EventoListCreateView, EventoDetailView, CalendarioListView, 
                    PlanificacionDetalleView, current_user, list_users, verificar_anio_academico,
@@ -37,6 +37,7 @@ router.register(r'planificaciones-semanales', PlanificacionSemanalViewSet, basen
 
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
+    path('auth/check-username/', check_username, name='check-username'),
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/logout/', logout_view, name='logout'),
