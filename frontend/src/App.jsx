@@ -72,6 +72,7 @@ function App() {
                 {/* Rutas de planificación */}
                 <Route path="/planificaciones" element={<ProtectedRoute><PlanificacionList /></ProtectedRoute>} />
                 <Route path="/planificaciones/nueva" element={<ProtectedRoute><NuevaPlanificacion /></ProtectedRoute>} />
+                <Route path="/planificaciones/editar/:tipo/:id" element={<ProtectedRoute><NuevaPlanificacion /></ProtectedRoute>} />
                 <Route path="/planificaciones/anuales" element={<ProtectedRoute><PlanificacionList tipo="ANUAL" /></ProtectedRoute>} />
                 <Route path="/planificaciones/unidades" element={<ProtectedRoute><PlanificacionList tipo="UNIDAD" /></ProtectedRoute>} />
                 <Route path="/planificaciones/semanales" element={<ProtectedRoute><PlanificacionList tipo="SEMANAL" /></ProtectedRoute>} />

@@ -218,10 +218,14 @@ ASIGNATURAS_CODIGO = {
     'Lenguaje y Comunicación': 'Lyc',
     'Lengua y Literatura': 'Lyl',
     'Matemática': 'Mat',
+    'Matemáticas': 'Mat',  # Alias común
     'Ciencias Naturales': 'Cna',
+    'Ciencias': 'Cna',  # Alias corto
     'Historia, Geografía y Ciencias Sociales': 'His',
+    'Historia': 'His',  # Alias corto
     'Inglés': 'Ing',
     'Educación Física y Salud': 'Efs',
+    'Educación Física': 'Efs',  # Alias corto
     'Artes Visuales': 'Arv',
     'Música': 'Mus',
     'Tecnología': 'Tec',
@@ -232,6 +236,7 @@ ASIGNATURAS_CODIGO = {
     'Física': 'Fis',
     'Química': 'Qui',
     'Educación Ciudadana': 'Edc',
+    'Ciencias para la Ciudadanía': 'CpC',  # Asignatura I°-II° Medio
 }
 
 # Códigos de niveles para la nomenclatura

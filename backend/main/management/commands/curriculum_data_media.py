@@ -291,10 +291,39 @@ BIOLOGIA_3M_UNIDADES = [
      'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
 ]
 
+# IV° Medio - Biología (Electivo CH)
+BIOLOGIA_4M_OAS = [
+    {'codigo': '4m-Bio-OA01', 'nivel': '4m', 'asignatura': 'Bio', 'eje': 'Biotecnología', 'numero': 1,
+     'descripcion': 'Analizar aplicaciones de la biotecnología y sus implicancias éticas.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Bio-OA03', 'nivel': '4m', 'asignatura': 'Bio', 'eje': 'Evolución', 'numero': 3,
+     'descripcion': 'Explicar la teoría de la evolución y evidencias que la sustentan.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Bio-OA05', 'nivel': '4m', 'asignatura': 'Bio', 'eje': 'Sistemas Humanos', 'numero': 5,
+     'descripcion': 'Analizar la regulación e integración de los sistemas del cuerpo humano.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+]
+
+BIOLOGIA_4M_UNIDADES = [
+    {'codigo': '4m-Bio-U1', 'nivel': '4m', 'asignatura': 'Bio', 'numero': 1, 'nombre': 'Biotecnología',
+     'descripcion': 'Aplicaciones biotecnológicas y bioética.',
+     'oa_codigos': ['4m-Bio-OA01'], 'oat_codigos': ['OAT-MOR-01', 'OAT-COG-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['Bio-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '4m-Bio-U2', 'nivel': '4m', 'asignatura': 'Bio', 'numero': 2, 'nombre': 'Evolución',
+     'descripcion': 'Teoría evolutiva y evidencias.',
+     'oa_codigos': ['4m-Bio-OA03'], 'oat_codigos': ['OAT-COG-01', 'OAT-COG-03'], 'habilidades_codigos': [], 'actitudes_codigos': ['Bio-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '4m-Bio-U3', 'nivel': '4m', 'asignatura': 'Bio', 'numero': 3, 'nombre': 'Fisiología humana',
+     'descripcion': 'Sistemas integrados del cuerpo humano.',
+     'oa_codigos': ['4m-Bio-OA05'], 'oat_codigos': ['OAT-AFE-02'], 'habilidades_codigos': [], 'actitudes_codigos': ['Bio-ACT02'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
+]
+
 BIOLOGIA_MEDIA = {
     'actitudes': BIOLOGIA_ACTITUDES,
     'niveles': {
         '3m': {'oas': BIOLOGIA_3M_OAS, 'unidades': BIOLOGIA_3M_UNIDADES},
+        '4m': {'oas': BIOLOGIA_4M_OAS, 'unidades': BIOLOGIA_4M_UNIDADES},
     }
 }
 
@@ -338,10 +367,39 @@ FISICA_3M_UNIDADES = [
      'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
 ]
 
+# IV° Medio - Física (Electivo CH)
+FISICA_4M_OAS = [
+    {'codigo': '4m-Fis-OA01', 'nivel': '4m', 'asignatura': 'Fis', 'eje': 'Física Moderna', 'numero': 1,
+     'descripcion': 'Explicar conceptos de física moderna: relatividad y mecánica cuántica.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Fis-OA03', 'nivel': '4m', 'asignatura': 'Fis', 'eje': 'Termodinámica', 'numero': 3,
+     'descripcion': 'Analizar las leyes de la termodinámica y sus aplicaciones.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Fis-OA05', 'nivel': '4m', 'asignatura': 'Fis', 'eje': 'Electromagnetismo', 'numero': 5,
+     'descripcion': 'Explicar fenómenos electromagnéticos y sus aplicaciones tecnológicas.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+]
+
+FISICA_4M_UNIDADES = [
+    {'codigo': '4m-Fis-U1', 'nivel': '4m', 'asignatura': 'Fis', 'numero': 1, 'nombre': 'Física moderna',
+     'descripcion': 'Relatividad y mecánica cuántica.',
+     'oa_codigos': ['4m-Fis-OA01'], 'oat_codigos': ['OAT-COG-03', 'OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Fis-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '4m-Fis-U2', 'nivel': '4m', 'asignatura': 'Fis', 'numero': 2, 'nombre': 'Termodinámica',
+     'descripcion': 'Leyes de la termodinámica.',
+     'oa_codigos': ['4m-Fis-OA03'], 'oat_codigos': ['OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['Fis-ACT02'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '4m-Fis-U3', 'nivel': '4m', 'asignatura': 'Fis', 'numero': 3, 'nombre': 'Electromagnetismo',
+     'descripcion': 'Campos electromagnéticos y aplicaciones.',
+     'oa_codigos': ['4m-Fis-OA05'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Fis-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
+]
+
 FISICA_MEDIA = {
     'actitudes': FISICA_ACTITUDES,
     'niveles': {
         '3m': {'oas': FISICA_3M_OAS, 'unidades': FISICA_3M_UNIDADES},
+        '4m': {'oas': FISICA_4M_OAS, 'unidades': FISICA_4M_UNIDADES},
     }
 }
 
@@ -385,10 +443,40 @@ QUIMICA_3M_UNIDADES = [
      'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
 ]
 
+# IV° Medio - Química (Electivo CH)
+QUIMICA_4M_OAS = [
+    {'codigo': '4m-Qui-OA01', 'nivel': '4m', 'asignatura': 'Qui', 'eje': 'Electroquímica', 'numero': 1,
+     'descripcion': 'Explicar procesos electroquímicos y sus aplicaciones industriales.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Qui-OA03', 'nivel': '4m', 'asignatura': 'Qui', 'eje': 'Soluciones', 'numero': 3,
+     'descripcion': 'Analizar propiedades de las soluciones y su preparación.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': []},
+    {'codigo': '4m-Qui-OA05', 'nivel': '4m', 'asignatura': 'Qui', 'eje': 'Bioquímica', 'numero': 5,
+     'descripcion': 'Relacionar la estructura de biomoléculas con sus funciones biológicas.',
+     'priorizado_2025': False, 'nivel_priorizacion': 'COMPLEMENTARIO', 'indicadores': [],
+     'articulaciones': [{'asignatura_codigo': 'Bio', 'asignatura_nombre': 'Biología', 'descripcion': 'Metabolismo celular'}]},
+]
+
+QUIMICA_4M_UNIDADES = [
+    {'codigo': '4m-Qui-U1', 'nivel': '4m', 'asignatura': 'Qui', 'numero': 1, 'nombre': 'Electroquímica',
+     'descripcion': 'Pilas, electrólisis y aplicaciones.',
+     'oa_codigos': ['4m-Qui-OA01'], 'oat_codigos': ['OAT-COG-04'], 'habilidades_codigos': [], 'actitudes_codigos': ['Qui-ACT01'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+    {'codigo': '4m-Qui-U2', 'nivel': '4m', 'asignatura': 'Qui', 'numero': 2, 'nombre': 'Soluciones',
+     'descripcion': 'Propiedades coligativas y preparación.',
+     'oa_codigos': ['4m-Qui-OA03'], 'oat_codigos': ['OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['Qui-ACT01'],
+     'horas_sugeridas': 40, 'semanas_sugeridas': 5, 'priorizado_2025': False},
+    {'codigo': '4m-Qui-U3', 'nivel': '4m', 'asignatura': 'Qui', 'numero': 3, 'nombre': 'Bioquímica',
+     'descripcion': 'Biomoléculas y metabolismo. ARTICULABLE CON BIOLOGÍA.',
+     'oa_codigos': ['4m-Qui-OA05'], 'oat_codigos': ['OAT-COG-01'], 'habilidades_codigos': [], 'actitudes_codigos': ['Qui-ACT02'],
+     'horas_sugeridas': 50, 'semanas_sugeridas': 6, 'priorizado_2025': False},
+]
+
 QUIMICA_MEDIA = {
     'actitudes': QUIMICA_ACTITUDES,
     'niveles': {
         '3m': {'oas': QUIMICA_3M_OAS, 'unidades': QUIMICA_3M_UNIDADES},
+        '4m': {'oas': QUIMICA_4M_OAS, 'unidades': QUIMICA_4M_UNIDADES},
     }
 }
 

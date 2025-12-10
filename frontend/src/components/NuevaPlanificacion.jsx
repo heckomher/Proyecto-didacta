@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import apiClient from '../services/api';
@@ -7,16 +7,22 @@ import apiClient from '../services/api';
 const NuevaPlanificacion = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { tipo: tipoEdit, id: editId } = useParams(); // Para modo edición
     const { user } = useAuth();
 
+    // Modo edición detectado desde la ruta
+    const isEditMode = Boolean(editId && tipoEdit);
+
     // Determinar tipo inicial desde URL params
-    const tipoInicial = searchParams.get('tipo') || '';
+    const tipoInicial = tipoEdit || searchParams.get('tipo') || '';
     const anualIdParam = searchParams.get('anual') || '';
     const unidadIdParam = searchParams.get('unidad') || '';
 
     const [step, setStep] = useState(tipoInicial ? 2 : 1); // Si viene con tipo, saltar al step 2
     const [tipo, setTipo] = useState(tipoInicial);
     const [loading, setLoading] = useState(false);
+    const [loadingEdit, setLoadingEdit] = useState(isEditMode); // Loading mientras carga datos en edición
+    const [originalEstado, setOriginalEstado] = useState(null); // Para mostrar warning si era aprobada
     const [misCursos, setMisCursos] = useState([]);
     const [planificacionesAnuales, setPlanificacionesAnuales] = useState([]);
     const [planificacionesUnidad, setPlanificacionesUnidad] = useState([]);
@@ -78,6 +84,57 @@ const NuevaPlanificacion = () => {
         };
         cargarDatos();
     }, []);
+
+    // Cargar datos de planificación existente en modo edición
+    useEffect(() => {
+        const cargarPlanificacionExistente = async () => {
+            if (!isEditMode || !editId || misCursos.length === 0) return;
+
+            try {
+                setLoadingEdit(true);
+                const endpoints = {
+                    'anual': '/planificaciones-anuales/',
+                    'unidad': '/planificaciones-unidad/',
+                    'semanal': '/planificaciones-semanales/'
+                };
+                const endpoint = endpoints[tipoEdit];
+                if (!endpoint) return;
+
+                const res = await apiClient.get(`${endpoint}${editId}/`);
+                const data = res.data;
+
+                // Guardar estado original para mostrar warning
+                setOriginalEstado(data.estado);
+
+                // Poblar formData con datos existentes
+                setFormData(prev => ({
+                    ...prev,
+                    titulo: data.titulo || '',
+                    descripcion: data.descripcion || '',
+                    curso: data.curso?.toString() || '',
+                    asignatura: data.asignatura?.toString() || '',
+                    fecha_inicio: data.fecha_inicio || '',
+                    fecha_fin: data.fecha_fin || '',
+                    meses_academicos: data.meses_academicos || 10,
+                    periodos_evaluacion: data.periodos_evaluacion || 2,
+                    numero_unidad: data.numero_unidad || 1,
+                    planificacion_anual: data.planificacion_anual?.toString() || '',
+                    semanas_duracion: data.semanas_duracion || 4,
+                    numero_semana: data.numero_semana || 1,
+                    planificacion_unidad: data.planificacion_unidad?.toString() || '',
+                    horas_academicas: data.horas_academicas || 45,
+                    unidad_curricular_codigo: data.unidad_curricular_codigo || ''
+                }));
+            } catch (error) {
+                console.error('Error cargando planificación:', error);
+                toast.error('Error al cargar la planificación');
+            } finally {
+                setLoadingEdit(false);
+            }
+        };
+
+        cargarPlanificacionExistente();
+    }, [isEditMode, editId, tipoEdit, misCursos]);
 
     // Auto-llenar fechas cuando se selecciona tipo anual
     useEffect(() => {
@@ -166,13 +223,47 @@ const NuevaPlanificacion = () => {
 
             if (!curso || !asignatura) return;
 
+            // Normalizar nombres para comparación (quitar acentos y caracteres especiales)
+            const normalizarNombre = (str) => str?.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // Quitar acentos
+                .replace(/[°º]/g, '')  // Quitar símbolos de grado
+                .replace(/\s+/g, ' ').trim();
+
+            // Extraer el grado del nombre del curso (ej: "I° A" -> "I°", "1° Medio" -> "1°")
+            const extraerGrado = (nombreCurso) => {
+                // Buscar patrones como "I°", "II°", "III°", "IV°", "1°", "2°", etc.
+                const match = nombreCurso?.match(/^(I{1,3}V?|IV|[1-8])°?\s*/i);
+                return match ? match[1] : null;
+            };
+
+            // Construir el nivel completo combinando grado + tipo de nivel
+            const grado = extraerGrado(curso.nombre_curso);
+            const tipoNivel = curso.nivel_nombre?.includes('Básico') ? 'Básico' :
+                curso.nivel_nombre?.includes('Media') ? 'Medio' : '';
+
+            // Crear el nombre de nivel para búsqueda (ej: "I° Medio", "8° Básico")
+            const nivelCompleto = grado && tipoNivel ? `${grado}° ${tipoNivel}` : curso.nivel_nombre;
+            const nivelNormalizado = normalizarNombre(nivelCompleto);
+            const asigNormalizada = normalizarNombre(asignatura.nombre);
+
+            console.log('Buscando nivel:', nivelCompleto, '-> normalizado:', nivelNormalizado);
+            console.log('Buscando asignatura:', asignatura.nombre, '-> normalizado:', asigNormalizada);
+
             // Convertir nivel y asignatura a códigos
             const nivelCodigo = Object.entries(codigosCurriculum.niveles || {})
-                .find(([nombre]) => curso.nivel_nombre?.includes(nombre))?.[1];
+                .find(([nombre]) => {
+                    const nombreNorm = normalizarNombre(nombre);
+                    return nivelNormalizado?.includes(nombreNorm) || nombreNorm?.includes(nivelNormalizado);
+                })?.[1];
             const asigCodigo = Object.entries(codigosCurriculum.asignaturas || {})
-                .find(([nombre]) => asignatura.nombre?.includes(nombre) || nombre.includes(asignatura.nombre))?.[1];
+                .find(([nombre]) => {
+                    const nombreNorm = normalizarNombre(nombre);
+                    return asigNormalizada?.includes(nombreNorm) || nombreNorm?.includes(asigNormalizada);
+                })?.[1];
 
             if (!nivelCodigo || !asigCodigo) {
+                console.log('No se encontró código para nivel:', nivelCompleto, '-> Código:', nivelCodigo);
+                console.log('No se encontró código para asignatura:', asignatura.nombre, '-> Código:', asigCodigo);
                 setUnidadesCurriculares([]);
                 return;
             }
@@ -340,13 +431,17 @@ const NuevaPlanificacion = () => {
                 titulo: formData.titulo,
                 descripcion: formData.descripcion,
                 tipo: tipoMap[tipo],
-                curso: parseInt(formData.curso),
-                asignatura: parseInt(formData.asignatura),
-                anio_academico: anioAcademicoId,
                 fecha_inicio: formData.fecha_inicio,
-                fecha_fin: formData.fecha_fin,
-                estado: 'BORRADOR'
+                fecha_fin: formData.fecha_fin
             };
+
+            // Solo incluir curso/asignatura si es creación nueva (no edición con herencia)
+            if (!isEditMode) {
+                payload.curso = parseInt(formData.curso);
+                payload.asignatura = parseInt(formData.asignatura);
+                payload.anio_academico = anioAcademicoId;
+                payload.estado = 'BORRADOR';
+            }
 
             // Campos específicos por tipo
             if (tipo === 'anual') {
@@ -366,12 +461,19 @@ const NuevaPlanificacion = () => {
                 }
             }
 
-            await apiClient.post(endpoints[tipo], payload);
-            toast.success('Planificación creada exitosamente');
+            if (isEditMode) {
+                // PUT para actualizar
+                await apiClient.put(`${endpoints[tipo]}${editId}/`, payload);
+                toast.success('Planificación actualizada exitosamente');
+            } else {
+                // POST para crear
+                await apiClient.post(endpoints[tipo], payload);
+                toast.success('Planificación creada exitosamente');
+            }
             navigate('/');
         } catch (error) {
-            console.error('Error creando planificación:', error);
-            toast.error('Error al crear planificación: ' + (error.response?.data?.detail || JSON.stringify(error.response?.data) || error.message));
+            console.error('Error guardando planificación:', error);
+            toast.error('Error al guardar planificación: ' + (error.response?.data?.detail || JSON.stringify(error.response?.data) || error.message));
         } finally {
             setLoading(false);
         }
@@ -393,8 +495,35 @@ const NuevaPlanificacion = () => {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                    Nueva Planificación
+                    {isEditMode ? 'Editar Planificación' : 'Nueva Planificación'}
                 </h1>
+
+                {/* Warning cuando se edita una planificación aprobada/pendiente */}
+                {isEditMode && originalEstado && ['APROBADA', 'PENDIENTE'].includes(originalEstado) && (
+                    <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                        <div className="flex items-start">
+                            <svg className="h-5 w-5 text-yellow-500 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div>
+                                <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                                    Esta planificación está {originalEstado === 'APROBADA' ? 'aprobada' : 'pendiente de aprobación'}
+                                </h4>
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                                    Al guardar cambios, la planificación volverá a estado <strong>Borrador</strong> y deberá ser revisada nuevamente por UTP.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Loading mientras carga datos en edición */}
+                {loadingEdit && (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando planificación...</span>
+                    </div>
+                )}
 
                 {/* Step 1: Seleccionar Tipo */}
                 {step === 1 && (

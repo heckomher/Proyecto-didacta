@@ -823,6 +823,15 @@ class PlanificacionAnualViewSet(viewsets.ModelViewSet):
         """Auto-assign autor to current user"""
         serializer.save(autor=self.request.user)
     
+    def perform_update(self, serializer):
+        """Reset estado to BORRADOR when planification is edited"""
+        instance = self.get_object()
+        # Si la planificación estaba aprobada o pendiente, volver a borrador
+        if instance.estado in ['APROBADA', 'PENDIENTE']:
+            serializer.save(estado='BORRADOR')
+        else:
+            serializer.save()
+    
     @action(detail=True, methods=['post'], url_path='enviar-validacion')
     def enviar_validacion(self, request, pk=None):
         """Enviar planificación anual a validación"""
@@ -851,6 +860,14 @@ class PlanificacionUnidadViewSet(viewsets.ModelViewSet):
         """Auto-assign autor to current user"""
         serializer.save(autor=self.request.user)
     
+    def perform_update(self, serializer):
+        """Reset estado to BORRADOR when planification is edited"""
+        instance = self.get_object()
+        if instance.estado in ['APROBADA', 'PENDIENTE']:
+            serializer.save(estado='BORRADOR')
+        else:
+            serializer.save()
+    
     @action(detail=True, methods=['post'], url_path='enviar-validacion')
     def enviar_validacion(self, request, pk=None):
         """Enviar planificación de unidad a validación"""
@@ -878,6 +895,14 @@ class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Auto-assign autor to current user"""
         serializer.save(autor=self.request.user)
+    
+    def perform_update(self, serializer):
+        """Reset estado to BORRADOR when planification is edited"""
+        instance = self.get_object()
+        if instance.estado in ['APROBADA', 'PENDIENTE']:
+            serializer.save(estado='BORRADOR')
+        else:
+            serializer.save()
     
     @action(detail=True, methods=['post'], url_path='enviar-validacion')
     def enviar_validacion(self, request, pk=None):

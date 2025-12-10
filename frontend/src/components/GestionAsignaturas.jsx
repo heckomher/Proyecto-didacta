@@ -14,6 +14,7 @@ const GestionAsignaturas = () => {
   const [showAsignarModal, setShowAsignarModal] = useState(false);
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState(null);
   const [cursoAsignaturas, setCursoAsignaturas] = useState([]);
+  const [ocultarSinCursos, setOcultarSinCursos] = useState(true); // Ocultar por defecto
 
   const isUTP = user?.role === 'UTP';
 
@@ -95,13 +96,28 @@ const GestionAsignaturas = () => {
     }
   };
 
-  const asignaturasFilteradas = filtroNivel
-    ? asignaturas.filter(a => {
-      // Filtrar por nombre del nivel educativo
-      const nivelSeleccionado = nivelesEducativos.find(n => n.id === parseInt(filtroNivel));
-      return nivelSeleccionado && a.nivel_educativo_nombre === nivelSeleccionado.nombre;
-    })
-    : asignaturas;
+  // Función para contar cursos que tienen esta asignatura
+  const getCursosConAsignatura = (asignaturaId) => {
+    return cursos.filter(curso =>
+      curso.asignaturas_asignadas?.some(ca => ca.asignatura === asignaturaId)
+    ).length;
+  };
+
+  const asignaturasFilteradas = asignaturas
+    .filter(a => {
+      // Filtro por nivel educativo
+      if (filtroNivel) {
+        const nivelSeleccionado = nivelesEducativos.find(n => n.id === parseInt(filtroNivel));
+        if (!nivelSeleccionado || a.nivel_educativo_nombre !== nivelSeleccionado.nombre) {
+          return false;
+        }
+      }
+      // Filtro por asignaturas con cursos
+      if (ocultarSinCursos) {
+        return getCursosConAsignatura(a.id) > 0;
+      }
+      return true;
+    });
 
   console.log('Estado actual:', {
     totalAsignaturas: asignaturas.length,
@@ -170,6 +186,19 @@ const GestionAsignaturas = () => {
             <option key={nivel.id} value={nivel.id}>{nivel.nombre}</option>
           ))}
         </select>
+        <div className="mt-3 flex items-center">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ocultarSinCursos}
+              onChange={(e) => setOcultarSinCursos(e.target.checked)}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+              Ocultar asignaturas sin cursos asignados
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* Lista de asignaturas */}
