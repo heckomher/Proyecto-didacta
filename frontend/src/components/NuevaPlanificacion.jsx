@@ -18,6 +18,7 @@ const NuevaPlanificacion = () => {
     const [misCursos, setMisCursos] = useState([]);
     const [planificacionesAnuales, setPlanificacionesAnuales] = useState([]);
     const [planificacionesUnidad, setPlanificacionesUnidad] = useState([]);
+    const [anioActivo, setAnioActivo] = useState(null);
 
     const [formData, setFormData] = useState({
         titulo: '',
@@ -41,20 +42,38 @@ const NuevaPlanificacion = () => {
     useEffect(() => {
         const cargarDatos = async () => {
             try {
-                const [cursosRes, anualesRes, unidadesRes] = await Promise.all([
+                const [cursosRes, anualesRes, unidadesRes, aniosRes] = await Promise.all([
                     apiClient.get('/docentes/mis-cursos/'),
                     apiClient.get('/planificaciones-anuales/'),
-                    apiClient.get('/planificaciones-unidad/')
+                    apiClient.get('/planificaciones-unidad/'),
+                    apiClient.get('/anios-academicos/')
                 ]);
                 setMisCursos(cursosRes.data);
                 setPlanificacionesAnuales(anualesRes.data);
                 setPlanificacionesUnidad(unidadesRes.data);
+
+                // Buscar año activo
+                const activo = aniosRes.data.find(a => a.estado === 'ACTIVO');
+                if (activo) {
+                    setAnioActivo(activo);
+                }
             } catch (error) {
                 console.error('Error cargando datos:', error);
             }
         };
         cargarDatos();
     }, []);
+
+    // Auto-llenar fechas cuando se selecciona tipo anual
+    useEffect(() => {
+        if (tipo === 'anual' && anioActivo && !formData.fecha_inicio && !formData.fecha_fin) {
+            setFormData(prev => ({
+                ...prev,
+                fecha_inicio: anioActivo.fecha_inicio,
+                fecha_fin: anioActivo.fecha_fin
+            }));
+        }
+    }, [tipo, anioActivo]);
 
     // Obtener asignaturas del curso seleccionado
     const getAsignaturasCurso = () => {
@@ -74,11 +93,29 @@ const NuevaPlanificacion = () => {
         };
 
         try {
+            // Obtener el año académico del curso seleccionado o usar el activo
+            const cursoSeleccionado = misCursos.find(c => c.id === parseInt(formData.curso));
+            const anioAcademicoId = cursoSeleccionado?.anio_academico || anioActivo?.id;
+
+            if (!anioAcademicoId) {
+                toast.error('No hay un año académico activo');
+                setLoading(false);
+                return;
+            }
+
+            const tipoMap = {
+                anual: 'ANUAL',
+                unidad: 'UNIDAD',
+                semanal: 'SEMANAL'
+            };
+
             const payload = {
                 titulo: formData.titulo,
                 descripcion: formData.descripcion,
+                tipo: tipoMap[tipo],
                 curso: parseInt(formData.curso),
                 asignatura: parseInt(formData.asignatura),
+                anio_academico: anioAcademicoId,
                 fecha_inicio: formData.fecha_inicio,
                 fecha_fin: formData.fecha_fin,
                 estado: 'BORRADOR'
