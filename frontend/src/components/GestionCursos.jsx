@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import apiClient from '../services/api';
 
 const GestionCursos = () => {
   const navigate = useNavigate();
@@ -28,13 +28,6 @@ const GestionCursos = () => {
 
   const isUTP = user?.role === 'UTP';
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: { 'Authorization': `Bearer ${token}` }
-    };
-  };
-
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -42,13 +35,13 @@ const GestionCursos = () => {
   const cargarDatos = async () => {
     try {
       const [cursosRes, nivelesRes, asignaturasRes, aniosRes, docentesRes] = await Promise.all([
-        axios.get('/cursos/', getAuthHeaders()),
-        axios.get('/niveles-educativos/', getAuthHeaders()),
-        axios.get('/asignaturas/', getAuthHeaders()),
-        axios.get('/anios-academicos/', getAuthHeaders()),
-        axios.get('/docentes/', getAuthHeaders())
+        apiClient.get('/cursos/'),
+        apiClient.get('/niveles-educativos/'),
+        apiClient.get('/asignaturas/'),
+        apiClient.get('/anios-academicos/'),
+        apiClient.get('/docentes/')
       ]);
-      
+
       // Solo mostrar cursos NO archivados (años activos o en borrador)
       setCursos(cursosRes.data.filter(c => !c.archivado));
       setNivelesEducativos(nivelesRes.data);
@@ -69,12 +62,12 @@ const GestionCursos = () => {
       setAsignaturasSugeridas([]);
       return;
     }
-    
+
     try {
       const nivel = nivelesEducativos.find(n => n.id === parseInt(nivelId));
       if (!nivel) return;
-      
-      const response = await axios.get(`/asignaturas/sugeridas-por-nivel/${encodeURIComponent(nivel.nombre)}/`, getAuthHeaders());
+
+      const response = await apiClient.get(`/asignaturas/sugeridas-por-nivel/${encodeURIComponent(nivel.nombre)}/`);
       setAsignaturasSugeridas(response.data);
     } catch (error) {
       console.error('Error cargando asignaturas sugeridas:', error);
@@ -85,16 +78,16 @@ const GestionCursos = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     console.log('Guardando curso con datos:', formData);
-    
+
     try {
       if (editingCurso) {
-        const response = await axios.put(`/cursos/${editingCurso.id}/`, formData, getAuthHeaders());
+        const response = await apiClient.put(`/cursos/${editingCurso.id}/`, formData);
         console.log('Respuesta del servidor:', response.data);
         alert('Curso actualizado exitosamente');
       } else {
-        const response = await axios.post('/cursos/', formData, getAuthHeaders());
+        const response = await apiClient.post('/cursos/', formData);
         console.log('Respuesta del servidor:', response.data);
         alert('Curso creado exitosamente');
       }
@@ -133,9 +126,9 @@ const GestionCursos = () => {
 
   const eliminarCurso = async (id) => {
     if (!confirm('¿Está seguro de eliminar este curso?')) return;
-    
+
     try {
-      await axios.delete(`/cursos/${id}/`, getAuthHeaders());
+      await apiClient.delete(`/cursos/${id}/`);
       alert('Curso eliminado');
       cargarDatos();
     } catch (error) {
@@ -151,13 +144,12 @@ const GestionCursos = () => {
 
   const asignarDocente = async (asignaturaId, docenteId) => {
     try {
-      await axios.post(
+      await apiClient.post(
         `/cursos/${cursoParaDocentes.id}/asignar-docente/`,
-        { asignatura_id: asignaturaId, docente_id: docenteId },
-        getAuthHeaders()
+        { asignatura_id: asignaturaId, docente_id: docenteId }
       );
       // Recargar datos del curso
-      const cursoRes = await axios.get(`/cursos/${cursoParaDocentes.id}/`, getAuthHeaders());
+      const cursoRes = await apiClient.get(`/cursos/${cursoParaDocentes.id}/`);
       setCursoParaDocentes(cursoRes.data);
       cargarDatos();
     } catch (error) {
@@ -299,7 +291,7 @@ const GestionCursos = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nivel Educativo</label>
                   <select
