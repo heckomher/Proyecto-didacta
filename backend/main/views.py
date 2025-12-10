@@ -819,6 +819,10 @@ class PlanificacionAnualViewSet(viewsets.ModelViewSet):
             return queryset
         return queryset.filter(autor=self.request.user)
     
+    def perform_create(self, serializer):
+        """Auto-assign autor to current user"""
+        serializer.save(autor=self.request.user)
+    
     @action(detail=True, methods=['post'], url_path='enviar-validacion')
     def enviar_validacion(self, request, pk=None):
         """Enviar planificación anual a validación"""
@@ -843,6 +847,10 @@ class PlanificacionUnidadViewSet(viewsets.ModelViewSet):
             return queryset
         return queryset.filter(autor=self.request.user)
     
+    def perform_create(self, serializer):
+        """Auto-assign autor to current user"""
+        serializer.save(autor=self.request.user)
+    
     @action(detail=True, methods=['post'], url_path='enviar-validacion')
     def enviar_validacion(self, request, pk=None):
         """Enviar planificación de unidad a validación"""
@@ -866,6 +874,10 @@ class PlanificacionSemanalViewSet(viewsets.ModelViewSet):
         if self.request.user.role in ['UTP', 'EQUIPO_DIRECTIVO']:
             return queryset
         return queryset.filter(autor=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Auto-assign autor to current user"""
+        serializer.save(autor=self.request.user)
     
     @action(detail=True, methods=['post'], url_path='enviar-validacion')
     def enviar_validacion(self, request, pk=None):
