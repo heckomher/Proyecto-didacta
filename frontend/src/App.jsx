@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AcademicProvider } from './contexts/AcademicContext';
@@ -83,6 +83,9 @@ function App() {
           </Router>
           <Toaster
             position="top-right"
+            containerStyle={{
+              zIndex: 99999,
+            }}
             toastOptions={{
               duration: 4000,
               style: {
@@ -105,7 +108,22 @@ function App() {
                 duration: 5000,
               },
             }}
-          />
+          >
+            {(t) => (
+              <div
+                onClick={() => toast.dismiss(t.id)}
+                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+              >
+                <span>{t.message}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toast.dismiss(t.id); }}
+                  style={{ marginLeft: '8px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '16px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </Toaster>
         </AcademicProvider>
       </AuthProvider>
     </ThemeProvider>
