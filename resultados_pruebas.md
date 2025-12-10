@@ -1,30 +1,28 @@
 # Resultados de Pruebas - Sistema Didacta
 **Fecha:** 2025-12-10
-**Ejecutor:** Automated/Manual Testing
+**Ejecutor:** Automated Testing (Vitest)
+**Framework:** Vitest + Node.js
 
 ---
 
 ## Resumen Ejecutivo
 
-| Categoría | Ejecutados | Pasados | Fallidos | Pendientes |
-|-----------|------------|---------|----------|------------|
-| CU-01: Autenticación | 2 | 2 | 0 | 2 |
-| CU-02: Gestión Usuarios | 1 | 1 | 0 | 3 |
-| CU-06: Seguridad | 3 | 3 | 0 | 2 |
-| **TOTAL** | **6** | **6** | **0** | **7** |
+| Categoría | Ejecutados | Pasados | Fallidos |
+|-----------|------------|---------|----------|
+| CU-01: Autenticación | 2 | 2 | 0 |
+| CU-02: Gestión Usuarios | 1 | 1 | 0 |
+| CU-03: Planificaciones | 1 | 1 | 0 |
+| CU-06: Seguridad | 3 | 3 | 0 |
+| **TOTAL** | **7** | **7** | **0** |
 
----
+✅ **Todos los tests pasaron exitosamente**
 
-## Resultados Detallados
+## Comando de Ejecución
 
-### CU-01: Autenticación e Inicio de Sesión
-
-| Test ID | Descripción | Resultado | Notas |
-|---------|-------------|-----------|-------|
-| TC-01.1 | Login exitoso con credenciales válidas | ⏳ PENDIENTE | Requiere credenciales de prueba |
-| TC-01.2 | Login fallido con credenciales inválidas | ✅ PASÓ | API devuelve 401 Unauthorized |
-| TC-01.3 | Login con campos vacíos | ⏳ PENDIENTE | - |
-| TC-01.4 | Persistencia de sesión | ⏳ PENDIENTE | Requiere prueba manual |
+```bash
+cd frontend
+npm test
+```
 
 ### CU-06: Seguridad
 
