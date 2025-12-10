@@ -49,9 +49,24 @@ class RegisterView(generics.CreateAPIView):
         logger.error(f"[REGISTER] Serializer válido, creando usuario...")
         return super().create(request, *args, **kwargs)
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom serializer that checks if user is active before issuing token"""
+    
+    def validate(self, attrs):
+        # First perform standard authentication
+        data = super().validate(attrs)
+        
+        # Check if user is active (custom activo field)
+        if hasattr(self.user, 'activo') and not self.user.activo:
+            raise serializers.ValidationError(
+                {"detail": "No hemos podido procesar su acceso, comuníquese con su Supervisor"}
+            )
+        
+        return data
+
 class LoginView(TokenObtainPairView):
-    # Use SimpleJWT's serializer to return access/refresh tokens
-    serializer_class = TokenObtainPairSerializer
+    # Use custom serializer that checks activo field
+    serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
 
 @api_view(['POST'])

@@ -105,10 +105,14 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(userResponse.data);
       localStorage.setItem('role', userResponse.data.role);
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Login failed', error);
-      return false;
+      // Extract error message from server response
+      const errorMessage = error.response?.data?.detail ||
+        error.response?.data?.non_field_errors?.[0] ||
+        'Credenciales incorrectas. Por favor, intente nuevamente.';
+      return { success: false, error: errorMessage };
     }
   };
 

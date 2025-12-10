@@ -13,11 +13,11 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(username, password);
-    if (success) {
+    const result = await login(username, password);
+    if (result.success) {
       navigate('/');
     } else {
-      toast.error('Credenciales incorrectas. Por favor, intente nuevamente.');
+      toast.error(result.error);
     }
   };
 
