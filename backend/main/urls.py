@@ -14,6 +14,13 @@ from .views import (RegisterView, LoginView, logout_view, check_username, Planif
                    ObjetivoAprendizajeViewSet, RecursoPedagogicoViewSet,
                    PlanificacionAnualViewSet, PlanificacionUnidadViewSet, PlanificacionSemanalViewSet)
 
+# Curriculum views (MongoDB)
+from .curriculum_views import (
+    UnidadesCurricularesView, UnidadDetalleView, OAsPorNivelAsignaturaView,
+    CodigosCurriculumView, OATsView, HabilidadesPorNivelAsignaturaView, 
+    ActitudesPorAsignaturaView
+)
+
 # Router para los ViewSets
 router = DefaultRouter()
 # Configuración académica
@@ -57,6 +64,16 @@ urlpatterns = [
     path('eventos/', EventoListCreateView.as_view(), name='eventos'),
     path('eventos/<int:pk>/', EventoDetailView.as_view(), name='evento-detail'),
     path('calendario/', CalendarioListView.as_view(), name='calendario'),
+    
+    # Curriculum Nacional (MongoDB)
+    path('curriculum/codigos/', CodigosCurriculumView.as_view(), name='curriculum-codigos'),
+    path('curriculum/unidades/<str:nivel>/<str:asignatura>/', UnidadesCurricularesView.as_view(), name='curriculum-unidades'),
+    path('curriculum/unidad/<str:codigo>/', UnidadDetalleView.as_view(), name='curriculum-unidad-detalle'),
+    path('curriculum/oa/<str:nivel>/<str:asignatura>/', OAsPorNivelAsignaturaView.as_view(), name='curriculum-oa'),
+    path('curriculum/oat/', OATsView.as_view(), name='curriculum-oat'),
+    path('curriculum/habilidades/<str:nivel>/<str:asignatura>/', HabilidadesPorNivelAsignaturaView.as_view(), name='curriculum-habilidades'),
+    path('curriculum/actitudes/<str:asignatura>/', ActitudesPorAsignaturaView.as_view(), name='curriculum-actitudes'),
+    
     # Incluir rutas del router
     path('', include(router.urls)),
 ]
