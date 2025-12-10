@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8001
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8001", "backend.wsgi:application"]
+CMD ["./entrypoint.sh"]
