@@ -53,47 +53,70 @@ class Command(BaseCommand):
         self.stdout.write(f'  Resultado: {creados} creados, {existentes} existían')
 
     def _seed_asignaturas(self):
-        """Siembra las asignaturas del currículum chileno"""
-        self.stdout.write('\n[2/2] Sembrando Asignaturas...')
+        """Siembra las asignaturas del currículum chileno con niveles educativos"""
+        self.stdout.write('\n[2/2] Sembrando Asignaturas del Currículum Chileno...')
         
-        asignaturas = [
-            # Asignaturas comunes
-            {'nombre_asignatura': 'Lenguaje y Comunicación', 'descripcion': 'Desarrollo de habilidades comunicativas'},
-            {'nombre_asignatura': 'Matemática', 'descripcion': 'Desarrollo del pensamiento lógico-matemático'},
-            {'nombre_asignatura': 'Historia, Geografía y Ciencias Sociales', 'descripcion': 'Conocimiento del entorno social'},
-            {'nombre_asignatura': 'Ciencias Naturales', 'descripcion': 'Exploración del mundo natural'},
-            {'nombre_asignatura': 'Inglés', 'descripcion': 'Idioma extranjero'},
-            {'nombre_asignatura': 'Educación Física y Salud', 'descripcion': 'Desarrollo motriz y vida saludable'},
-            {'nombre_asignatura': 'Artes Visuales', 'descripcion': 'Expresión artística visual'},
-            {'nombre_asignatura': 'Música', 'descripcion': 'Expresión musical'},
-            {'nombre_asignatura': 'Tecnología', 'descripcion': 'Desarrollo tecnológico'},
-            {'nombre_asignatura': 'Orientación', 'descripcion': 'Desarrollo personal y social'},
-            # Educación Media
-            {'nombre_asignatura': 'Física', 'descripcion': 'Ciencias físicas - Educación Media'},
-            {'nombre_asignatura': 'Química', 'descripcion': 'Ciencias químicas - Educación Media'},
-            {'nombre_asignatura': 'Biología', 'descripcion': 'Ciencias biológicas - Educación Media'},
-            {'nombre_asignatura': 'Filosofía', 'descripcion': 'Pensamiento filosófico - Educación Media'},
-            # Parvularia
-            {'nombre_asignatura': 'Ámbito Personal y Social', 'descripcion': 'Desarrollo socioemocional - Parvularia'},
-            {'nombre_asignatura': 'Comunicación Integral', 'descripcion': 'Lenguaje verbal y artístico - Parvularia'},
-            {'nombre_asignatura': 'Interacción y Comprensión del Entorno', 'descripcion': 'Exploración del entorno - Parvularia'},
-        ]
+        # Asignaturas organizadas por nivel educativo chileno
+        asignaturas_por_nivel = {
+            'Educación Parvularia': [
+                {'nombre': 'Ámbito Personal y Social', 'desc': 'Desarrollo socioemocional'},
+                {'nombre': 'Comunicación Integral', 'desc': 'Lenguaje verbal y artístico'},
+                {'nombre': 'Interacción y Comprensión del Entorno', 'desc': 'Exploración del entorno'},
+            ],
+            'Educación Básica': [
+                {'nombre': 'Lenguaje y Comunicación', 'desc': 'Desarrollo de habilidades comunicativas'},
+                {'nombre': 'Matemática', 'desc': 'Desarrollo del pensamiento lógico-matemático'},
+                {'nombre': 'Historia, Geografía y Ciencias Sociales', 'desc': 'Conocimiento del entorno social'},
+                {'nombre': 'Ciencias Naturales', 'desc': 'Exploración del mundo natural'},
+                {'nombre': 'Inglés', 'desc': 'Idioma extranjero'},
+                {'nombre': 'Educación Física y Salud', 'desc': 'Desarrollo motriz y vida saludable'},
+                {'nombre': 'Artes Visuales', 'desc': 'Expresión artística visual'},
+                {'nombre': 'Música', 'desc': 'Expresión musical'},
+                {'nombre': 'Tecnología', 'desc': 'Desarrollo tecnológico'},
+                {'nombre': 'Orientación', 'desc': 'Desarrollo personal y social'},
+            ],
+            'Educación Media': [
+                {'nombre': 'Lengua y Literatura', 'desc': 'Comprensión y producción de textos'},
+                {'nombre': 'Matemática', 'desc': 'Desarrollo del pensamiento lógico-matemático'},
+                {'nombre': 'Historia, Geografía y Ciencias Sociales', 'desc': 'Formación ciudadana'},
+                {'nombre': 'Inglés', 'desc': 'Idioma extranjero'},
+                {'nombre': 'Educación Física y Salud', 'desc': 'Desarrollo motriz y vida saludable'},
+                {'nombre': 'Física', 'desc': 'Ciencias físicas'},
+                {'nombre': 'Química', 'desc': 'Ciencias químicas'},
+                {'nombre': 'Biología', 'desc': 'Ciencias biológicas'},
+                {'nombre': 'Filosofía', 'desc': 'Pensamiento filosófico y ético'},
+                {'nombre': 'Artes Visuales', 'desc': 'Expresión artística visual'},
+                {'nombre': 'Música', 'desc': 'Expresión musical'},
+                {'nombre': 'Tecnología', 'desc': 'Desarrollo tecnológico'},
+            ],
+        }
         
         creados = 0
+        actualizados = 0
         existentes = 0
         
-        for asig_data in asignaturas:
-            asig, created = Asignatura.objects.get_or_create(
-                nombre_asignatura=asig_data['nombre_asignatura'],
-                defaults={'descripcion': asig_data['descripcion']}
-            )
-            
-            if created:
-                creados += 1
-                self.stdout.write(self.style.SUCCESS(f'  ✓ Creada: {asig.nombre_asignatura}'))
-            else:
-                existentes += 1
+        for nivel_nombre, asignaturas in asignaturas_por_nivel.items():
+            for asig_data in asignaturas:
+                # La descripción incluye el nivel para el filtro sugeridas-por-nivel
+                descripcion_completa = f"{asig_data['desc']} - {nivel_nombre}"
+                
+                asig, created = Asignatura.objects.get_or_create(
+                    nombre_asignatura=asig_data['nombre'],
+                    defaults={'descripcion': descripcion_completa}
+                )
+                
+                if created:
+                    creados += 1
+                    self.stdout.write(self.style.SUCCESS(f'  ✓ Creada: {asig.nombre_asignatura} ({nivel_nombre})'))
+                else:
+                    # Actualizar descripción si no tiene el nivel
+                    if nivel_nombre not in asig.descripcion:
+                        asig.descripcion = descripcion_completa
+                        asig.save()
+                        actualizados += 1
+                        self.stdout.write(f'  ↻ Actualizada: {asig.nombre_asignatura} → {nivel_nombre}')
+                    else:
+                        existentes += 1
         
-        if existentes > 0:
-            self.stdout.write(f'  - {existentes} asignaturas ya existían')
-        self.stdout.write(f'  Resultado: {creados} creadas, {existentes} existían')
+        self.stdout.write(f'  Resultado: {creados} creadas, {actualizados} actualizadas, {existentes} sin cambios')
+
