@@ -157,10 +157,27 @@ class NivelEducativo(models.Model):
         """Eliminar nivel"""
         pass
 
+# Choices para tipos de asignatura
+TIPO_ASIGNATURA_CHOICES = [
+    ('COMUN', 'Común'),
+    ('ELECTIVO', 'Electivo'),
+]
+
+# Choices para planes diferenciados de Educación Media
+PLAN_DIFERENCIADO_CHOICES = [
+    ('', 'No aplica'),
+    ('MEDIO_1_2', '1°-2° Medio'),
+    ('CH', 'Científico-Humanista'),
+    ('TP', 'Técnico Profesional'),
+    ('ARTISTICO', 'Artístico'),
+]
+
 class Asignatura(models.Model):
     """Asignaturas según diagrama ER"""
     nombre_asignatura = models.CharField(max_length=200, unique=True)
     descripcion = models.TextField(blank=True)
+    tipo = models.CharField(max_length=20, choices=TIPO_ASIGNATURA_CHOICES, default='COMUN')
+    plan_asociado = models.CharField(max_length=20, blank=True, default='', help_text='Plan al que pertenece (solo para electivos)')
     
     class Meta:
         verbose_name = 'Asignatura'
@@ -176,10 +193,17 @@ class Curso(models.Model):
     nivel = models.ForeignKey('NivelEducativo', on_delete=models.CASCADE, related_name='cursos')
     docente_jefe = models.ForeignKey('Docente', on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos_a_cargo')
     asignaturas = models.ManyToManyField('Asignatura', through='CursoAsignatura', related_name='cursos')
-    anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='cursos', null=True)  # Temporal null=True para migración
-    archivado = models.BooleanField(default=False, editable=False)  # Se activa automáticamente cuando el año se cierra
+    anio_academico = models.ForeignKey('AnioAcademico', on_delete=models.CASCADE, related_name='cursos', null=True)
+    archivado = models.BooleanField(default=False, editable=False)
     capacidad_maxima = models.IntegerField(default=40)
     paralelo = models.CharField(max_length=10, blank=True)
+    plan_diferenciado = models.CharField(
+        max_length=20, 
+        choices=PLAN_DIFERENCIADO_CHOICES, 
+        blank=True, 
+        default='',
+        help_text='Plan diferenciado para Educación Media (3°-4°)'
+    )
     
     class Meta:
         verbose_name = 'Curso'

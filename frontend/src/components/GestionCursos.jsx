@@ -11,6 +11,7 @@ const GestionCursos = () => {
   const [nivelesEducativos, setNivelesEducativos] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
   const [asignaturasSugeridas, setAsignaturasSugeridas] = useState([]);
+  const [electivosSugeridos, setElectivosSugeridos] = useState([]);
   const [aniosAcademicos, setAniosAcademicos] = useState([]);
   const [docentes, setDocentes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +25,8 @@ const GestionCursos = () => {
     paralelo: '',
     anio_academico: '',
     capacidad_maxima: 40,
-    asignaturas: []
+    asignaturas: [],
+    plan_diferenciado: ''
   });
 
   const isUTP = user?.role === 'UTP';
@@ -72,9 +74,30 @@ const GestionCursos = () => {
       setAsignaturasSugeridas(response.data);
     } catch (error) {
       console.error('Error cargando asignaturas sugeridas:', error);
-      // Si falla, mostrar todas las asignaturas
-      setAsignaturasSugeridas(asignaturas);
+      setAsignaturasSugeridas(asignaturas.filter(a => a.tipo === 'COMUN'));
     }
+  };
+
+  const cargarElectivos = async (plan) => {
+    if (!plan || plan === 'MEDIO_1_2') {
+      setElectivosSugeridos([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get(`/asignaturas/electivos-por-plan/${plan}/`);
+      setElectivosSugeridos(response.data);
+    } catch (error) {
+      console.error('Error cargando electivos:', error);
+      setElectivosSugeridos([]);
+    }
+  };
+
+  // Detectar si el nivel es Educación Media
+  const esEducacionMedia = () => {
+    if (!formData.nivel) return false;
+    const nivel = nivelesEducativos.find(n => n.id === parseInt(formData.nivel));
+    return nivel?.nombre?.toLowerCase().includes('media');
   };
 
   const handleSubmit = async (e) => {
@@ -100,8 +123,10 @@ const GestionCursos = () => {
         paralelo: '',
         anio_academico: '',
         capacidad_maxima: 40,
-        asignaturas: []
+        asignaturas: [],
+        plan_diferenciado: ''
       });
+      setElectivosSugeridos([]);
       cargarDatos();
     } catch (error) {
       console.error('Error guardando curso:', error);
@@ -119,9 +144,13 @@ const GestionCursos = () => {
       paralelo: curso.paralelo || '',
       anio_academico: curso.anio_academico,
       capacidad_maxima: curso.capacidad_maxima,
-      asignaturas: asignaturasIds
+      asignaturas: asignaturasIds,
+      plan_diferenciado: curso.plan_diferenciado || ''
     });
     cargarAsignaturasSugeridas(curso.nivel);
+    if (curso.plan_diferenciado && curso.plan_diferenciado !== 'MEDIO_1_2') {
+      cargarElectivos(curso.plan_diferenciado);
+    }
     setShowForm(true);
   };
 
@@ -352,30 +381,61 @@ const GestionCursos = () => {
                 </div>
               </div>
 
-              {/* Asignaturas Sugeridas */}
+              {/* Plan Diferenciado - Solo para Educación Media */}
+              {esEducacionMedia() && (
+                <div className="mt-4 p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                  <label className="block text-sm font-medium mb-2 text-blue-800 dark:text-blue-200">
+                    Plan Diferenciado (Educación Media)
+                  </label>
+                  <select
+                    value={formData.plan_diferenciado}
+                    onChange={(e) => {
+                      const nuevoPlan = e.target.value;
+                      setFormData({ ...formData, plan_diferenciado: nuevoPlan });
+                      cargarElectivos(nuevoPlan);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                  >
+                    <option value="">Seleccione un plan</option>
+                    <option value="MEDIO_1_2">1°-2° Medio (Plan Común)</option>
+                    <option value="CH">3°-4° Científico-Humanista</option>
+                    <option value="TP">3°-4° Técnico Profesional</option>
+                    <option value="ARTISTICO">3°-4° Artístico</option>
+                  </select>
+                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                    {formData.plan_diferenciado && formData.plan_diferenciado !== 'MEDIO_1_2' &&
+                      'Los electivos se compartirán con otros cursos del mismo plan.'
+                    }
+                  </p>
+                </div>
+              )}
+
+              {/* Asignaturas Comunes */}
               {formData.nivel && asignaturasSugeridas.length > 0 && (
                 <div className="mt-6">
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Asignaturas Sugeridas para este nivel
+                      📚 Asignaturas Comunes
                       <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                        (Seleccione las que aplicarán para este curso)
+                        (Obligatorias para este nivel)
                       </span>
                     </label>
                     <button
                       type="button"
                       onClick={() => {
-                        if (formData.asignaturas.length === asignaturasSugeridas.length) {
-                          // Si todas están seleccionadas, deseleccionar todas
-                          setFormData({ ...formData, asignaturas: [] });
+                        const comunesIds = asignaturasSugeridas.map(a => a.id);
+                        const otrasSeleccionadas = formData.asignaturas.filter(id => !comunesIds.includes(id));
+                        if (formData.asignaturas.filter(id => comunesIds.includes(id)).length === comunesIds.length) {
+                          // Si todas las comunes están seleccionadas, deseleccionar solo las comunes
+                          setFormData({ ...formData, asignaturas: otrasSeleccionadas });
                         } else {
-                          // Seleccionar todas
-                          setFormData({ ...formData, asignaturas: asignaturasSugeridas.map(a => a.id) });
+                          // Seleccionar todas las comunes, mantener las electivas
+                          setFormData({ ...formData, asignaturas: [...new Set([...otrasSeleccionadas, ...comunesIds])] });
                         }
                       }}
                       className="px-3 py-1 text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-700 dark:text-primary-400 rounded-lg font-medium transition-colors"
                     >
-                      {formData.asignaturas.length === asignaturasSugeridas.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+                      {asignaturasSugeridas.every(a => formData.asignaturas.includes(a.id)) ? 'Deseleccionar comunes' : 'Seleccionar todas las comunes'}
                     </button>
                   </div>
                   <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700/50">
@@ -407,10 +467,82 @@ const GestionCursos = () => {
                       ))}
                     </div>
                   </div>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {formData.asignaturas.length} asignatura(s) seleccionada(s)
+                </div>
+              )}
+
+              {/* Electivos - Solo para 3°-4° Media con plan seleccionado */}
+              {electivosSugeridos.length > 0 && (
+                <div className="mt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-purple-700 dark:text-purple-300">
+                      🎯 Electivos del Plan
+                      <span className="text-xs text-purple-500 dark:text-purple-400 ml-2">
+                        ({formData.plan_diferenciado === 'CH' ? 'Científico-Humanista' :
+                          formData.plan_diferenciado === 'TP' ? 'Técnico Profesional' :
+                            formData.plan_diferenciado === 'ARTISTICO' ? 'Artístico' : ''})
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const electivosIds = electivosSugeridos.map(a => a.id);
+                        const otrasSeleccionadas = formData.asignaturas.filter(id => !electivosIds.includes(id));
+                        if (formData.asignaturas.filter(id => electivosIds.includes(id)).length === electivosIds.length) {
+                          setFormData({ ...formData, asignaturas: otrasSeleccionadas });
+                        } else {
+                          setFormData({ ...formData, asignaturas: [...new Set([...otrasSeleccionadas, ...electivosIds])] });
+                        }
+                      }}
+                      className="px-3 py-1 text-xs bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-400 rounded-lg font-medium transition-colors"
+                    >
+                      {electivosSugeridos.every(a => formData.asignaturas.includes(a.id)) ? 'Deseleccionar electivos' : 'Seleccionar todos los electivos'}
+                    </button>
+                  </div>
+                  <div className="border border-purple-300 dark:border-purple-600 rounded-lg p-4 max-h-60 overflow-y-auto bg-purple-50 dark:bg-purple-900/20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {electivosSugeridos.map(asignatura => (
+                        <label key={asignatura.id} className="flex items-start space-x-2 p-2 hover:bg-purple-100 dark:hover:bg-purple-800/30 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.asignaturas.includes(asignatura.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  asignaturas: [...formData.asignaturas, asignatura.id]
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  asignaturas: formData.asignaturas.filter(id => id !== asignatura.id)
+                                });
+                              }
+                            }}
+                            className="mt-0.5 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span className="text-sm text-purple-700 dark:text-purple-300">
+                            {asignatura.nombre_asignatura}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-purple-500 dark:text-purple-400">
+                    Los alumnos de 3° y 4° medio pueden mezclarse en estos electivos.
                   </p>
                 </div>
+              )}
+
+              {/* Resumen de selección */}
+              {formData.nivel && (
+                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                  Total: {formData.asignaturas.length} asignatura(s) seleccionada(s)
+                  {electivosSugeridos.length > 0 && (
+                    <span className="ml-2 text-purple-600 dark:text-purple-400">
+                      ({formData.asignaturas.filter(id => electivosSugeridos.some(e => e.id === id)).length} electivo(s))
+                    </span>
+                  )}
+                </p>
               )}
 
               <div className="flex gap-2 mt-6">
@@ -428,8 +560,10 @@ const GestionCursos = () => {
                       paralelo: '',
                       anio_academico: '',
                       capacidad_maxima: 40,
-                      asignaturas: []
+                      asignaturas: [],
+                      plan_diferenciado: ''
                     });
+                    setElectivosSugeridos([]);
                   }}
                   className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
                 >

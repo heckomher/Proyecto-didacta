@@ -235,7 +235,7 @@ class AsignaturaSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Asignatura
-        fields = ['id', 'nombre_asignatura', 'descripcion', 'nivel_educativo_nombre', 'cursos_count']
+        fields = ['id', 'nombre_asignatura', 'descripcion', 'tipo', 'plan_asociado', 'nivel_educativo_nombre', 'cursos_count']
     
     def get_cursos_count(self, obj):
         return obj.cursos.count()
@@ -283,7 +283,8 @@ class CursoSerializer(serializers.ModelSerializer):
         model = Curso
         fields = ['id', 'nombre_curso', 'nivel', 'nivel_nombre', 'docente_jefe', 'docente_jefe_info',
                  'asignaturas', 'asignaturas_info', 'asignaturas_asignadas', 'planificaciones_count', 
-                 'anio_academico', 'anio_academico_nombre', 'archivado', 'capacidad_maxima', 'paralelo']
+                 'anio_academico', 'anio_academico_nombre', 'archivado', 'capacidad_maxima', 'paralelo',
+                 'plan_diferenciado']
     
     def get_planificaciones_count(self, obj):
         return obj.planificaciones_legacy.count() + sum(ca.planificaciones.count() for ca in obj.asignaturas_asignadas.all())

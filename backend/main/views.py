@@ -603,7 +603,7 @@ class AsignaturaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='sugeridas-por-nivel/(?P<nivel_nombre>[^/.]+)')
     def sugeridas_por_nivel(self, request, nivel_nombre=None):
         """
-        Retorna asignaturas sugeridas según el nivel educativo del currículum chileno.
+        Retorna asignaturas COMUNES sugeridas según el nivel educativo del currículum chileno.
         """
         # Mapeo de niveles a categorías de asignaturas
         nivel_mapping = {
@@ -617,11 +617,11 @@ class AsignaturaViewSet(viewsets.ModelViewSet):
             '6° Básico': ['Educación Básica'],
             '7° Básico': ['Educación Básica'],
             '8° Básico': ['Educación Básica'],
-            'Educación Media': ['Educación Media', 'Educación Básica'],
-            '1° Medio': ['Educación Media', 'Educación Básica'],
-            '2° Medio': ['Educación Media', 'Educación Básica'],
-            '3° Medio': ['Educación Media', 'Educación Básica'],
-            '4° Medio': ['Educación Media', 'Educación Básica'],
+            'Educación Media': ['Educación Media'],
+            '1° Medio': ['Educación Media'],
+            '2° Medio': ['Educación Media'],
+            '3° Medio': ['Educación Media'],
+            '4° Medio': ['Educación Media'],
             'Educación de Adultos': ['Educación de Adultos'],
         }
         
@@ -633,16 +633,36 @@ class AsignaturaViewSet(viewsets.ModelViewSet):
                 break
         
         if not categorias:
-            # Por defecto, mostrar todas las asignaturas
-            asignaturas = Asignatura.objects.all()
+            # Por defecto, mostrar todas las asignaturas comunes
+            asignaturas = Asignatura.objects.filter(tipo='COMUN')
         else:
-            # Filtrar asignaturas por descripción que contenga el nivel
+            # Filtrar asignaturas COMUNES por descripción que contenga el nivel
             query = Asignatura.objects.none()
             for categoria in categorias:
-                query = query | Asignatura.objects.filter(descripcion__icontains=categoria)
+                query = query | Asignatura.objects.filter(
+                    descripcion__icontains=categoria,
+                    tipo='COMUN'
+                )
             asignaturas = query.distinct()
         
         serializer = self.get_serializer(asignaturas, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='electivos-por-plan/(?P<plan>[^/.]+)')
+    def electivos_por_plan(self, request, plan=None):
+        """
+        Retorna asignaturas ELECTIVAS según el plan diferenciado.
+        Planes válidos: CH (Científico-Humanista), TP (Técnico Profesional), ARTISTICO
+        """
+        if not plan:
+            return Response({'error': 'Debe especificar un plan'}, status=400)
+        
+        plan = plan.upper()
+        if plan not in ['CH', 'TP', 'ARTISTICO']:
+            return Response({'error': f'Plan no válido: {plan}'}, status=400)
+        
+        electivos = Asignatura.objects.filter(tipo='ELECTIVO', plan_asociado=plan)
+        serializer = self.get_serializer(electivos, many=True)
         return Response(serializer.data)
 
 class CursoViewSet(viewsets.ModelViewSet):
