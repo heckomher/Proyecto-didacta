@@ -381,7 +381,7 @@ const GestionCursos = () => {
                   <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700/50">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {asignaturasSugeridas.map(asignatura => (
-                        <label key={asignatura.id} className="flex items-center space-x-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-600/50 rounded cursor-pointer">
+                        <label key={asignatura.id} className="flex items-start space-x-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-600/50 rounded cursor-pointer">
                           <input
                             type="checkbox"
                             checked={formData.asignaturas.includes(asignatura.id)}
@@ -398,7 +398,7 @@ const GestionCursos = () => {
                                 });
                               }
                             }}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            className="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">
                             {asignatura.nombre_asignatura}
