@@ -112,12 +112,25 @@ function App() {
             {(t) => (
               <div
                 onClick={() => toast.dismiss(t.id)}
-                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  background: t.type === 'success' ? '#10B981' : t.type === 'error' ? '#EF4444' : '#333',
+                  color: '#fff',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  boxShadow: '0 3px 10px rgba(0,0,0,0.1), 0 3px 3px rgba(0,0,0,0.05)'
+                }}
               >
+                <div style={{ marginRight: '8px' }}>
+                  {t.type === 'success' && '✅'}
+                  {t.type === 'error' && '❌'}
+                </div>
                 <span>{t.message}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); toast.dismiss(t.id); }}
-                  style={{ marginLeft: '8px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '16px' }}
+                  style={{ marginLeft: '12px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '14px', opacity: 0.8 }}
                 >
                   ✕
                 </button>
